@@ -2,12 +2,12 @@
 #'
 #' @description
 #' ChIP-seq experiments usually use crosslinking strategy to capture
-#' sequencing fragments. The fragment size is affected by at least but
+#' sequencing fragments. The fragment location is affected by at least but
 #' not limited to two factors, protein real binding and crosslinking
 #' operation. This function estimate size of binding part in crosslinked
 #' DNA-protein complexes, and denoted that as ChIP-seq binding width.
 #'
-#' @param cov A list object returned by function \code{rc5end}.
+#' @param cov A list object returned by function \code{read5endCoverage}.
 #'
 #' @param range A non-nagative integer vector with length 2. This vector
 #' set the range within which binding width are estimated.
@@ -29,10 +29,10 @@
 #' @export
 #' @examples
 #' bam <- system.file("extdata/chipseq.bam",package="gcapc")
-#' cov <- rc5end(bam)
-#' bdw <- bdwidth(cov)
+#' cov <- read5endCoverage(bam)
+#' bindingWidth(cov)
 
-bdwidth <- function(cov,range=c(50L,600L),step=50L,auto=TRUE){
+bindingWidth <- function(cov,range=c(50L,600L),step=50L,auto=TRUE){
     cat("Starting to estimate bdwidth.\n")
     if(!is.list(cov) || length(cov)!=2)
         stop("bdwidth: cov is not a list of 2 elements\n")

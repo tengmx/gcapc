@@ -40,9 +40,9 @@
 #' @export
 #' @examples
 #' bam <- system.file("extdata/chipseq.bam",package="gcapc")
-#' cov <- rc5end(bam)
+#' read5endCoverage(bam)
 
-rc5end <- function(bam,chroms=NULL,mapq=30L,duplicate=FALSE,
+read5endCoverage <- function(bam,chroms=NULL,mapq=30L,duplicate=FALSE,
                    flag=scanBamFlag(isUnmappedQuery=FALSE,
                        isSecondaryAlignment=FALSE,
                        isNotPassingQualityControls=FALSE)){
