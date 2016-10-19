@@ -1,4 +1,4 @@
-#' @title GC Aware Peak Calling
+#' @title GC Effects Aware Peak Calling
 #'
 #' @description
 #' This function calls ChIP-seq peaks using potential GC effects information.
@@ -67,9 +67,9 @@
 #' cov <- rc5end(bam)
 #' bdw <- bdwidth(cov)
 #' gcb <- gcbias(cov,bdw,samp = 0.15)
-#' peaks <- gcapc(cov,gcb,bdw)
+#' peaks <- callpeaks(cov,gcb,bdw)
 
-gcapc <- function(cov,gcbias,bdwidth=200L,flank=round(bdwidth/2),
+callpeaks <- function(cov,gcbias,bdwidth=200L,flank=round(bdwidth/2),
                   prefilter=4L,permute=10L,pv=0.05,plot=FALSE,
                   species="Hsapiens",build="hg19"){
     library(paste0("BSgenome.",species,".UCSC.",build),character.only=TRUE)

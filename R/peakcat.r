@@ -40,9 +40,9 @@
 #' cov <- rc5end(bam)
 #' bdw <- bdwidth(cov)
 #' gcb1 <- gcbias(cov,bdw,samp=0.15,plot=FALSE)
-#' peaks1 <- gcapc(cov,gcb1,bdw)
+#' peaks1 <- callpeaks(cov,gcb1,bdw)
 #' gcb2 <- gcbias(cov,bdw,samp=0.1,plot=FALSE)
-#' peaks2 <- gcapc(cov,gcb2,bdw)
+#' peaks2 <- callpeaks(cov,gcb2,bdw)
 #' peakcat(peaks1,peaks2,ranks=seq(100,200,5),ylim=c(0,1))
 
 peakcat <- function(x,y,ranks=seq(200,20000,50),esx=1,esy=1,add=FALSE,...){

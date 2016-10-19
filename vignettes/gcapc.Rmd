@@ -170,8 +170,8 @@ notification messages are also printed.
 
 ```{r gcapc}
 layout(matrix(1:2,1,2))
-peaks <- gcapc(cov,gcb,bdw,plot=TRUE)
-peaks <- gcapc(cov,gcb,bdw,plot=TRUE,permute=20L)
+peaks <- callpeaks(cov,gcb,bdw,plot=TRUE)
+peaks <- callpeaks(cov,gcb,bdw,plot=TRUE,permute=20L)
 peaks
 ```
 
