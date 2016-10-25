@@ -99,7 +99,7 @@ to illustrate this package. This file contains about ~80000 reads from
 human chromosome 21 for CTCF ChIP-seq data.
 
 ```{r data}
-bam <- system.file("extdata/chipseq.bam",package="gcapc")
+bam <- system.file("extdata", "chipseq.bam", package="gcapc")
 ```
 
 # Peak Calling
@@ -138,7 +138,7 @@ If additional information is known from sequencing fragments, this step
 could be speeded up. For example, narrowing down the range size helps.
 
 ```{r bdwidth1}
-bdw <- bindingWidth(cov,range=c(50L,150L),step=10L)
+bdw <- bindingWidth(cov, range=c(50L,150L), step=10L)
 bdw
 ```
 
@@ -152,7 +152,7 @@ default to display the trace of log likelihood changes, and other
 notification messages are printed for courtesy.
 
 ```{r gcbias}
-gcb <- gcEffects(cov,bdw,samp=0.15,plot=TRUE)
+gcb <- gcEffects(cov, bdw, samp=0.25, plot=TRUE)
 ```
 
 Here, the left figure provides the correlation between forward and reverse
@@ -171,8 +171,8 @@ notification messages are also printed.
 
 ```{r gcapc}
 layout(matrix(1:2,1,2))
-peaks <- gcapcPeaks(cov,gcb,bdw,plot=TRUE)
-peaks <- gcapcPeaks(cov,gcb,bdw,plot=TRUE,permute=20L)
+peaks <- gcapcPeaks(cov, gcb, bdw, plot=TRUE)
+peaks <- gcapcPeaks(cov, gcb, bdw, plot=TRUE, permute=20L)
 peaks
 ```
 

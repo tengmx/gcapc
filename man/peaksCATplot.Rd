@@ -39,13 +39,13 @@ A CAT plot.
 Plot the consistancy between two peak lists.
 }
 \examples{
-bam <- system.file("extdata/chipseq.bam",package="gcapc")
+bam <- system.file("extdata", "chipseq.bam", package="gcapc")
 cov <- read5endCoverage(bam)
 bdw <- bindingWidth(cov)
-gcb1 <- gcEffects(cov,bdw,samp=0.15,plot=FALSE)
-peaks1 <- gcapcPeaks(cov,gcb1,bdw)
-gcb2 <- gcEffects(cov,bdw,samp=0.1,plot=FALSE)
-peaks2 <- gcapcPeaks(cov,gcb2,bdw)
-peaksCATplot(peaks1,peaks2,ranks=seq(100,200,5),ylim=c(0,1))
+gcb1 <- gcEffects(cov, bdw, samp=0.15, plot=FALSE)
+peaks1 <- gcapcPeaks(cov, gcb1, bdw)
+gcb2 <- gcEffects(cov, bdw, samp=0.2, plot=FALSE)
+peaks2 <- gcapcPeaks(cov, gcb2, bdw)
+peaksCATplot(peaks1, peaks2, ranks=seq(100,200,5), ylim=c(0,1))
 }
 

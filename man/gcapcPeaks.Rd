@@ -6,7 +6,7 @@
 \usage{
 gcapcPeaks(cov, gcbias, bdwidth = 200L, flank = round(bdwidth/2),
   prefilter = 4L, permute = 10L, pv = 0.05, plot = FALSE,
-  species = "Hsapiens", build = "hg19")
+  genome = "hg19")
 }
 \arguments{
 \item{cov}{A list object returned by function \code{read5endCoverage}.}
@@ -39,13 +39,13 @@ binding peaks. Default is 0.05.}
 \item{plot}{A logical vector which, when TRUE (default), returns density
 plots of real and permutation enrichment scores.}
 
-\item{species}{A character specifying the symbol of species on which
-ChIP-seq is generated. It will be used to extract DNA sequence
-from BSgenome. For example, "Hsapiens" for human and "Mmusculus" 
-for mouse.}
-
-\item{build}{A character specifying the ucsc genome build of given 
-species, such as "hg19" for "Hsapiens" and "mm10" for "Mmusculus".}
+\item{genome}{A \link[BSgenome]{BSgenome} object containing the sequences
+of the reference genome that was used to align the reads, or the name of
+this reference genome specified in a way that is accepted by the
+\code{\link[BSgenome]{getBSgenome}} function defined in the \pkg{BSgenome}
+software package. In that case the corresponding BSgenome data package
+needs to be already installed (see \code{?\link[BSgenome]{getBSgenome}} in
+the \pkg{BSgenome} package for the details).}
 }
 \value{
 A GRanges of peaks with meta columns:
@@ -59,10 +59,10 @@ large regions, with GC effects considered. Permutation analysis is
 used to determine significant binding peaks.
 }
 \examples{
-bam <- system.file("extdata/chipseq.bam",package="gcapc")
+bam <- system.file("extdata", "chipseq.bam", package="gcapc")
 cov <- read5endCoverage(bam)
 bdw <- bindingWidth(cov)
-gcb <- gcEffects(cov,bdw,samp = 0.15)
-gcapcPeaks(cov,gcb,bdw)
+gcb <- gcEffects(cov, bdw, samp = 0.15)
+gcapcPeaks(cov, gcb, bdw)
 }
 

@@ -6,8 +6,7 @@
 \usage{
 gcEffects(cov, bdwidth = 200L, flank = round(bdwidth/2), samp = 0.05,
   gcrange = c(0.3, 0.8), plot = TRUE, mu0 = 1, mu1 = 50, p = 0.02,
-  converge = 1e-05, emtrace = TRUE, species = "Hsapiens",
-  build = "hg19")
+  converge = 0.001, emtrace = TRUE, genome = "hg19")
 }
 \arguments{
 \item{cov}{A list object returned by function \code{read5endCoverage}.}
@@ -54,13 +53,13 @@ increment to whole log likelihood is less or equivalent to
 \item{emtrace}{A logical vector which, when TRUE (default), allows to 
 print the trace of log likelihood changes in EM iterations.}
 
-\item{species}{A character specifying the symbol of species on which
-ChIP-seq is generated. It will be used to extract DNA sequence
-from BSgenome. For example, "Hsapiens" for human and "Mmusculus" 
-for mouse.}
-
-\item{build}{A character specifying the ucsc genome build of given 
-species, such as "hg19" for "Hsapiens" and "mm10" for "Mmusculus".}
+\item{genome}{A \link[BSgenome]{BSgenome} object containing the sequences
+of the reference genome that was used to align the reads, or the name of
+this reference genome specified in a way that is accepted by the
+\code{\link[BSgenome]{getBSgenome}} function defined in the \pkg{BSgenome}
+software package. In that case the corresponding BSgenome data package
+needs to be already installed (see \code{?\link[BSgenome]{getBSgenome}} in
+the \pkg{BSgenome} package for the details).}
 }
 \value{
 A list of objects
@@ -80,9 +79,9 @@ background and foreground are estimated separately, while effects on
 background level act more likely to be the real bias.
 }
 \examples{
-bam <- system.file("extdata/chipseq.bam",package="gcapc")
+bam <- system.file("extdata", "chipseq.bam", package="gcapc")
 cov <- read5endCoverage(bam)
 bdw <- bindingWidth(cov)
-gcb <- gcEffects(cov,bdw,samp = 0.15)
+gcb <- gcEffects(cov, bdw, samp = 0.15)
 }
 

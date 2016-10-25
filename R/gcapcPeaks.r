@@ -36,14 +36,14 @@
 #' @param plot A logical vector which, when TRUE (default), returns density
 #' plots of real and permutation enrichment scores.
 #'
-#' @param species A character specifying the symbol of species on which
-#' ChIP-seq is generated. It will be used to extract DNA sequence
-#' from BSgenome. For example, "Hsapiens" for human and "Mmusculus" 
-#' for mouse.
-#'
-#' @param build A character specifying the ucsc genome build of given 
-#' species, such as "hg19" for "Hsapiens" and "mm10" for "Mmusculus".
-#'
+#' @param genome A \link[BSgenome]{BSgenome} object containing the sequences
+#' of the reference genome that was used to align the reads, or the name of
+#' this reference genome specified in a way that is accepted by the
+#' \code{\link[BSgenome]{getBSgenome}} function defined in the \pkg{BSgenome}
+#' software package. In that case the corresponding BSgenome data package
+#' needs to be already installed (see \code{?\link[BSgenome]{getBSgenome}} in
+#' the \pkg{BSgenome} package for the details).
+#' 
 #' @return A GRanges of peaks with meta columns:
 #' \item{es}{Estimated enrichment score.}
 #' \item{pv}{p-value.}
@@ -51,6 +51,8 @@
 #' @import S4Vectors
 #' @import IRanges
 #' @import GenomicRanges
+#' @import Biostrings
+#' @importFrom BSgenome getBSgenome
 #' @importFrom BSgenome getSeq
 #' @importFrom splines ns
 #' @importFrom stats predict
@@ -64,16 +66,16 @@
 #'
 #' @export
 #' @examples
-#' bam <- system.file("extdata/chipseq.bam",package="gcapc")
+#' bam <- system.file("extdata", "chipseq.bam", package="gcapc")
 #' cov <- read5endCoverage(bam)
 #' bdw <- bindingWidth(cov)
-#' gcb <- gcEffects(cov,bdw,samp = 0.15)
-#' gcapcPeaks(cov,gcb,bdw)
+#' gcb <- gcEffects(cov, bdw, samp = 0.15)
+#' gcapcPeaks(cov, gcb, bdw)
 
 gcapcPeaks <- function(cov,gcbias,bdwidth=200L,flank=round(bdwidth/2),
                   prefilter=4L,permute=10L,pv=0.05,plot=FALSE,
-                  species="Hsapiens",build="hg19"){
-    library(paste0("BSgenome.",species,".UCSC.",build),character.only=TRUE)
+                  genome="hg19"){
+    genome <- getBSgenome(genome)
     cat("Starting to call peaks.\n")
     ### prefiltering regions
     cat("...... prefiltering regions\n")
@@ -96,8 +98,8 @@ gcapcPeaks <- function(cov,gcbias,bdwidth=200L,flank=round(bdwidth/2),
     ### gc content
     cat("...... caculating GC content\n")
     nr <- shift(resize(regionsgc,width(regionsgc)+flank*2),-flank)
-    seqs <- getSeq(get(species),nr)
-    gcpos <- gregexpr('(G)|(C)',seqs)
+    seqs <- getSeq(genome,nr)
+    gcpos <- startIndex(vmatchPattern("S", seqs, fixed="subject"))
     weight <- c(seq_len(flank),rep(flank+1,bdwidth),rev(seq_len(flank)))
     k <- length(weight)
     gcposb <- vector("integer",sum(width(nr)))

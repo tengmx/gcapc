@@ -38,7 +38,7 @@ strands separately. Options for customized filtering of BAM records
 are provided.
 }
 \examples{
-bam <- system.file("extdata/chipseq.bam",package="gcapc")
+bam <- system.file("extdata", "chipseq.bam", package="gcapc")
 read5endCoverage(bam)
 }
 

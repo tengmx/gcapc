@@ -51,13 +51,13 @@
 #' @param emtrace A logical vector which, when TRUE (default), allows to 
 #' print the trace of log likelihood changes in EM iterations.
 #'
-#' @param species A character specifying the symbol of species on which
-#' ChIP-seq is generated. It will be used to extract DNA sequence
-#' from BSgenome. For example, "Hsapiens" for human and "Mmusculus" 
-#' for mouse.
-#'
-#' @param build A character specifying the ucsc genome build of given 
-#' species, such as "hg19" for "Hsapiens" and "mm10" for "Mmusculus".
+#' @param genome A \link[BSgenome]{BSgenome} object containing the sequences
+#' of the reference genome that was used to align the reads, or the name of
+#' this reference genome specified in a way that is accepted by the
+#' \code{\link[BSgenome]{getBSgenome}} function defined in the \pkg{BSgenome}
+#' software package. In that case the corresponding BSgenome data package
+#' needs to be already installed (see \code{?\link[BSgenome]{getBSgenome}} in
+#' the \pkg{BSgenome} package for the details).
 #'
 #' @return A list of objects
 #' \item{glm0}{Estimated generalized linear model for background GC effects.}
@@ -71,6 +71,8 @@
 #' @import S4Vectors
 #' @import IRanges
 #' @import GenomicRanges
+#' @import Biostrings
+#' @importFrom BSgenome getBSgenome
 #' @importFrom BSgenome getSeq
 #' @importFrom splines ns
 #' @importFrom grDevices colorRampPalette
@@ -84,16 +86,16 @@
 #'
 #' @export
 #' @examples
-#' bam <- system.file("extdata/chipseq.bam",package="gcapc")
+#' bam <- system.file("extdata", "chipseq.bam", package="gcapc")
 #' cov <- read5endCoverage(bam)
 #' bdw <- bindingWidth(cov)
-#' gcb <- gcEffects(cov,bdw,samp = 0.15)
+#' gcb <- gcEffects(cov, bdw, samp = 0.15)
 
 gcEffects <- function(cov,bdwidth=200L,flank=round(bdwidth/2),
                    samp=0.05,gcrange=c(0.3,0.8),plot=TRUE,
-                   mu0=1,mu1=50,p=0.02,converge=1e-5,emtrace=TRUE,
-                   species="Hsapiens",build="hg19"){
-    library(paste0("BSgenome.",species,".UCSC.",build),character.only=TRUE)
+                   mu0=1,mu1=50,p=0.02,converge=1e-3,emtrace=TRUE,
+                   genome="hg19"){
+    genome <- getBSgenome(genome)
     ### regions and reads count
     cat("Starting to estimate GC effects.\n")
     cat("...... sampling regions\n")
@@ -123,11 +125,10 @@ gcEffects <- function(cov,bdwidth=200L,flank=round(bdwidth/2),
     cat("...... calculating GC content with flanking",flank,"\n")
     rwidth <- width(region[1])
     nr <- shift(resize(region,rwidth + flank*2),-flank)
-    seqs <- getSeq(get(species),nr)
-    gcpos <- gregexpr('(G)|(C)',seqs)
+    seqs <- getSeq(genome,nr)
+    gcpos <- startIndex(vmatchPattern("S", seqs, fixed="subject"))
     weight <- c(seq_len(flank),rep(flank+1,rwidth),rev(seq_len(flank)))
     gcnumw <- sapply(gcpos,function(x) sum(weight[x]))
-    gcnumw[gcnumw==(sum(weight)-1)] <- 0
     gc <- round(gcnumw / (flank+rwidth) / (flank+1),3)
     ### em algorithms
     cat("...... estimating GC effects\n")

@@ -39,7 +39,7 @@
 #'
 #' @export
 #' @examples
-#' bam <- system.file("extdata/chipseq.bam",package="gcapc")
+#' bam <- system.file("extdata", "chipseq.bam", package="gcapc")
 #' read5endCoverage(bam)
 
 read5endCoverage <- function(bam,chroms=NULL,mapq=30L,duplicate=FALSE,

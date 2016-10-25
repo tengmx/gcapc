@@ -1,6 +1,6 @@
 Package: gcapc
 Title: GC Aware Peak Caller
-Version: 0.99.0
+Version: 0.99.1
 Author: Mingxiang Teng and Rafael A. Irizarry
 Maintainer: Mingxiang Teng <tengmx@gmail.com>
 Description: Peak calling for ChIP-seq data with
@@ -15,6 +15,7 @@ Imports:
     GenomeInfoDb,
     S4Vectors,
     IRanges,
+    Biostrings,
     BSgenome,
     GenomicRanges,
     Rsamtools,
@@ -28,9 +29,10 @@ VignetteBuilder: knitr
 Suggests:
     BiocStyle,
     knitr,
-    rmarkdown
+    rmarkdown,
+    BSgenome.Hsapiens.UCSC.hg19
 URL: https://github.com/tengmx/gcapc
 License: GPL-3
 LazyData: true
-biocViews: ChIPSeq, BatchEffect, PeakDetection
+biocViews: Sequencing, ChIPSeq, BatchEffect, PeakDetection
 RoxygenNote: 5.0.1

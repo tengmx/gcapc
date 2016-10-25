@@ -32,7 +32,7 @@ operation. This function estimate size of binding part in crosslinked
 DNA-protein complexes, and denoted that as ChIP-seq binding width.
 }
 \examples{
-bam <- system.file("extdata/chipseq.bam",package="gcapc")
+bam <- system.file("extdata", "chipseq.bam", package="gcapc")
 cov <- read5endCoverage(bam)
 bindingWidth(cov)
 }
