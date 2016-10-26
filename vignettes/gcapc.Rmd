@@ -76,7 +76,7 @@ customized by users.
 
   1. Sequencing fragments options. If one has prior knowledge on the
   size of sequencing fragments. The optional arguments in function
-  *bindingWidth* could be specified to limit searching in narrower
+  *bindWidth* could be specified to limit searching in narrower
   ranges; Or, this function can be omitted if binding width are known
   in advance. Note that this binding width might not be equivalent to
   the binding width of protein in biology, since it could be affected
@@ -130,7 +130,7 @@ width is further treated as the size of region unit for weighted GC
 bias estimation and peak calling.
 
 ```{r bdwidth}
-bdw <- bindingWidth(cov)
+bdw <- bindWidth(cov)
 bdw
 ```
 
@@ -138,7 +138,7 @@ If additional information is known from sequencing fragments, this step
 could be speeded up. For example, narrowing down the range size helps.
 
 ```{r bdwidth1}
-bdw <- bindingWidth(cov, range=c(50L,150L), step=10L)
+bdw <- bindWidth(cov, range=c(50L,150L), step=10L)
 bdw
 ```
 

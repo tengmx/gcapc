@@ -30,9 +30,9 @@
 #' @examples
 #' bam <- system.file("extdata", "chipseq.bam", package="gcapc")
 #' cov <- read5endCoverage(bam)
-#' bindingWidth(cov)
+#' bindWidth(cov)
 
-bindingWidth <- function(cov,range=c(50L,600L),step=50L,auto=TRUE){
+bindWidth <- function(cov,range=c(50L,600L),step=50L,auto=TRUE){
     cat("Starting to estimate bdwidth.\n")
     if(!is.list(cov) || length(cov)!=2)
         stop("bdwidth: cov is not a list of 2 elements\n")
