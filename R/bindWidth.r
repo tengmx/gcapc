@@ -20,6 +20,10 @@
 #' @param auto A logical vector which, when TRUE, allows to automatically
 #' tune to higher resolution of binding width estimation. The highest
 #' resolution of 2bp is allowed. Default: TRUE.
+#' 
+#' @param odd A logical vector which, when TRUE, only allows return odd
+#' number of binding width, which is preferred by the 
+#' weighted GC content estimation. Default: TRUE.
 #'
 #' @return A numeric indicating estimated binding width.
 #'
@@ -32,7 +36,7 @@
 #' cov <- read5endCoverage(bam)
 #' bindWidth(cov)
 
-bindWidth <- function(cov,range=c(50L,600L),step=50L,auto=TRUE){
+bindWidth <- function(cov,range=c(50L,600L),step=50L,auto=TRUE,odd=TRUE){
     cat("Starting to estimate bdwidth.\n")
     if(!is.list(cov) || length(cov)!=2)
         stop("bdwidth: cov is not a list of 2 elements\n")
@@ -58,14 +62,15 @@ bindWidth <- function(cov,range=c(50L,600L),step=50L,auto=TRUE){
         cors <- sapply(seq_along(viewpos),function(i)
                        cor(viewpos[[i]],viewneg[[i]]))
         corsall <- colSums(t(cors) * readsum / sum(readsum))
-        if(!auto | step==2){
-            cat("...... estimated bind width as",
-                shifts[which.max(corsall)],"\n")
+        if(!auto | step==1){
             break
         }
         range <- shifts[which.max(corsall)]+c(-step,step)
-        step <- max(round(step/5),2)
+        step <- max(round(step/5),1)
         cycle <- cycle + 1
     }
-    shifts[which.max(corsall)]
+    w <- shifts[which.max(corsall)]
+    if(odd && w%%2==0) w <- w + 1
+    cat("...... estimated bind width as",w,"\n")
+    w
 }

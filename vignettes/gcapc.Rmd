@@ -1,10 +1,10 @@
 ---
-title: "The gcapc user's guide"
+title: "The *gcapc* user's guide"
 author: |
   | Mingxiang Teng <mxteng@jimmy.harvard.edu>
   | Rafael A. Irizarry <rafa@jimmy.harvard.edu>
   | Department of Biostatistics, Dana-Farber Cancer Institute,
-  | Harvard T.H. Chan School Public Health, Boston, MA, USA
+  | Harvard T.H. Chan School of Public Health, Boston, MA, USA
 date: "`r Sys.Date()`"
 output:
   BiocStyle::pdf_document:
@@ -31,10 +31,10 @@ ChIP-seq has been widely utilized as the standard technology to detect
 protein binding regions, where peak calling algorithms were developed
 particularly to serve the analysis. Existing peak callers lack of power
 on ranking peaks' significance due to sequencing technology might undergo
-sequence context biases, *e.g.* GC bias. gcapc is designed to address this
+sequence context biases, *e.g.* GC bias. *gcapc* is designed to address this
 deficiency by modeling GC effects into peak calling.
 
-The `gcapc` R-package performs GC bias estimation, peak calling, and plots on
+The *gcapc* R-package performs GC bias estimation, peak calling, and plots on
 intermediate results. It requires the inputs as one BAM file for ChIP-seq as
 well as other optional parameters. A common analysis contains four steps.
 
@@ -70,7 +70,7 @@ customized by users.
   1. BAM records filtering options. In the function *read5endCoverage*,
   reads can be filtered for selected chromosomes, mapping quality,
   duplicate removal, etc. Downstream analysis could be highly accelerated
-  if only a subset of chromosomes are analyzed. This actually provides
+  if only a subset of chromosomes are analyzed. This actually suggests
   a divide and conquer strategy if one ChIP-seq experiment is extremely
   deeply sequenced.
 
@@ -86,7 +86,7 @@ customized by users.
   means 5% of genome will be used if analysis is based on whole genome.
   However, for smaller genomes or small subset of chromosomes, this size
   should be tuned higher to ensure accuracy. In the other hand, larger
-  size results longer GC effects estimation.
+  size results longer computation of GC effects estimation.
 
   1. EM algorithm priors and convergence. Options for EM algorithms can
   be tuned to accelerate the iterations.
@@ -152,18 +152,19 @@ default to display the trace of log likelihood changes, and other
 notification messages are printed for courtesy.
 
 ```{r gcbias}
+set.seed(1)
 gcb <- gcEffects(cov, bdw, samp=0.25, plot=TRUE)
 ```
 
 Here, the left figure provides the correlation between forward and reverse
 strands signals, by using the estimated binding width as region unit.
-The right figure shows the raw and predicted GC effects using miture model.
+The right figure shows the raw and predicted GC effects using mixture model.
 The effect for the background regions will be utilized in downstream
 analysis.
 
 ## Peak significance
 
-This is the last step of `gcapc`. It uses information generated in previous
+This is the last step of *gcapc*. It uses information generated in previous
 steps, calculates enrichment scores and performs permutation analysis to
 propose significant peak regions. Final peaks are formated into *GRanges*
 object, and meta columns are used to record significance. Additional
@@ -176,11 +177,11 @@ peaks <- gcapcPeaks(cov, gcb, bdw, plot=TRUE, permute=20L)
 peaks
 ```
 
-It is noted that two tests using different number of permutation times
+It is noted that here two tests using different number of permutation times
 results almost the same cutoff on enrichment scores, which suggests small
 number of permutations are allowed to save time. The left figure shows here
-the cutoff on enrichment scores based on 10 times of
-permutations, and right figure shows it based on 20 times of permutations.
+the cutoff on enrichment scores based on 10 times of permutations, and 
+right figure shows it based on 20 times of permutations.
 
 # Summary
 

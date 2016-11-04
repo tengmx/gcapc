@@ -4,7 +4,8 @@
 \alias{bindWidth}
 \title{ChIP-seq Binding Width Estimation}
 \usage{
-bindWidth(cov, range = c(50L, 600L), step = 50L, auto = TRUE)
+bindWidth(cov, range = c(50L, 600L), step = 50L, auto = TRUE,
+  odd = TRUE)
 }
 \arguments{
 \item{cov}{A list object returned by function \code{read5endCoverage}.}
@@ -20,6 +21,10 @@ width estimation within \code{range}. This value will be tuned if
 \item{auto}{A logical vector which, when TRUE, allows to automatically
 tune to higher resolution of binding width estimation. The highest
 resolution of 2bp is allowed. Default: TRUE.}
+
+\item{odd}{A logical vector which, when TRUE, only allows return odd
+number of binding width, which is preferred by the 
+weighted GC content estimation. Default: TRUE.}
 }
 \value{
 A numeric indicating estimated binding width.
