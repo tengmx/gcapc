@@ -31,8 +31,8 @@ set the range of GC content to filter regions. For human, most regions
 have GC content between 0.3 and 0.8, which is set as the default. Other
 regions with GC content beyond this range will be ignored.}
 
-\item{plot}{A logical vector which, when TRUE (default), returns plots of
-intermediate results.}
+\item{plot}{A logical vector which, when TRUE (default), returns plots
+of intermediate results.}
 
 \item{mu0}{A non-negative numeric initiating read count signals for
 background regions. This is treated as a starting value for EM algorithm.

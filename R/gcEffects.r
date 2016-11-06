@@ -29,8 +29,8 @@
 #' have GC content between 0.3 and 0.8, which is set as the default. Other
 #' regions with GC content beyond this range will be ignored.
 #'
-#' @param plot A logical vector which, when TRUE (default), returns plots of
-#' intermediate results.
+#' @param plot A logical vector which, when TRUE (default), returns plots
+#' of intermediate results.
 #'
 #' @param mu0 A non-negative numeric initiating read count signals for
 #' background regions. This is treated as a starting value for EM algorithm.
@@ -167,7 +167,7 @@ gcEffects <- function(cov,bdwidth,flank=floor(bdwidth/2),
         if(emtrace)
             cat("......... iteration",i,'\tll',llf,'\tincrement',llgap,'\n')
     }
-    ### gcbias
+    ### gc effects
     gcbias <- list(glm0=lmns0,glm1=lmns1,
                    mu0=predY0,mu1=predY1,z=z,p=p,ll=llf)
     if(plot){

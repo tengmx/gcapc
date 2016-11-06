@@ -4,3 +4,5 @@
     - vmatchPattern function
 * version 0.99.3
     - tricube smoothed weight
+* version 0.99.4
+    - optimized permutation

@@ -16,7 +16,8 @@ Default c(50,600) represents most ChIP-seq experiments.}
 
 \item{step}{A non-negative integer to set the resolution of binding
 width estimation within \code{range}. This value will be tuned if
-\code{auto} is TRUE. Default 50 is based on default value of \code{range}.}
+\code{auto} is TRUE. Default 50 is based on default value of 
+\code{range}.}
 
 \item{auto}{A logical vector which, when TRUE, allows to automatically
 tune to higher resolution of binding width estimation. The highest

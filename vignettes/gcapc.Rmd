@@ -172,16 +172,18 @@ notification messages are also printed.
 
 ```{r gcapc}
 layout(matrix(1:2,1,2))
-peaks <- gcapcPeaks(cov, gcb, bdw, plot=TRUE)
-peaks <- gcapcPeaks(cov, gcb, bdw, plot=TRUE, permute=20L)
+peaks <- gcapcPeaks(cov, gcb, bdw, plot=TRUE, permute=50L)
+peaks <- gcapcPeaks(cov, gcb, bdw, plot=TRUE, permute=100L)
 peaks
 ```
 
 It is noted that here two tests using different number of permutation times
 results almost the same cutoff on enrichment scores, which suggests small
 number of permutations are allowed to save time. The left figure shows here
-the cutoff on enrichment scores based on 10 times of permutations, and 
-right figure shows it based on 20 times of permutations.
+the cutoff on enrichment scores based on 50 times of permutations, and 
+right figure shows it based on 100 times of permutations. Note that we only
+used chromosome 21 for illustration, and thus increased permutation times
+from default 10 to 50 here.
 
 # Summary
 
