@@ -6,3 +6,5 @@
     - tricube smoothed weight
 * version 0.99.4
     - optimized permutation
+* version 0.99.5
+    - detection half size & read counts

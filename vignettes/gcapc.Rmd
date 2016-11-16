@@ -43,7 +43,9 @@ well as other optional parameters. A common analysis contains four steps.
   separately.
 
   1. Binding width estimation. This parameter is a measurement for the size
-  of protein binding region in crosslinked complexes of ChIP experiments.
+  of protein binding region in crosslinked complexes of ChIP experiments. 
+  Also, peak detection half size are estimated based on region signals from
+  two strands.
 
   1. GC effects estimation. Generalized linear mixture models followed by EM
   algorithms are performed to evaluate potential GC effects.
@@ -124,10 +126,12 @@ on individual chromosomes.
 
 ## Binding width
 
-The second step is to estimate the binding width of ChIP-seq experiment.
+The second step is to estimate the binding width and peak detection half 
+window size of ChIP-seq experiment.
 This step could be omitted if binding width is known in advance. Binding
-width is further treated as the size of region unit for weighted GC
-bias estimation and peak calling.
+width is further treated as the size of region unit for effective GC
+bias estimation and peak calling. Peak detection half 
+window size is used to define width of flanking regions.
 
 ```{r bdwidth}
 bdw <- bindWidth(cov)
@@ -138,7 +142,7 @@ If additional information is known from sequencing fragments, this step
 could be speeded up. For example, narrowing down the range size helps.
 
 ```{r bdwidth1}
-bdw <- bindWidth(cov, range=c(50L,150L), step=10L)
+bdw <- bindWidth(cov, range=c(50L,300L), step=10L)
 bdw
 ```
 

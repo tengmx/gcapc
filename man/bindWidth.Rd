@@ -2,40 +2,37 @@
 % Please edit documentation in R/bindWidth.r
 \name{bindWidth}
 \alias{bindWidth}
-\title{ChIP-seq Binding Width Estimation}
+\title{ChIP-seq Binding Width And Peak Window Size Estimation}
 \usage{
-bindWidth(cov, range = c(50L, 600L), step = 50L, auto = TRUE,
-  odd = TRUE)
+bindWidth(cov, range = c(50L, 500L), step = 50L, odd = TRUE)
 }
 \arguments{
 \item{cov}{A list object returned by function \code{read5endCoverage}.}
 
 \item{range}{A non-nagative integer vector with length 2. This vector
-set the range within which binding width are estimated.
-Default c(50,600) represents most ChIP-seq experiments.}
+set the range within which binding width and peak window size are 
+estimated. Default c(50,500) represents most ChIP-seq experiments.}
 
 \item{step}{A non-negative integer to set the resolution of binding
 width estimation within \code{range}. This value will be tuned if
 \code{auto} is TRUE. Default 50 is based on default value of 
 \code{range}.}
 
-\item{auto}{A logical vector which, when TRUE, allows to automatically
-tune to higher resolution of binding width estimation. The highest
-resolution of 2bp is allowed. Default: TRUE.}
-
 \item{odd}{A logical vector which, when TRUE, only allows return odd
 number of binding width, which is preferred by the 
-weighted GC content estimation. Default: TRUE.}
+effective GC content estimation. Default: TRUE.}
 }
 \value{
-A numeric indicating estimated binding width.
+A numeric vector with 2 elements:
+Estimated binding width and half size of peak detection window.
 }
 \description{
 ChIP-seq experiments usually use crosslinking strategy to capture
 sequencing fragments. The fragment location is affected by at least but
 not limited to two factors, protein real binding and crosslinking
 operation. This function estimate size of binding part in crosslinked
-DNA-protein complexes, and denoted that as ChIP-seq binding width.
+DNA-protein complexes, and denoted that as ChIP-seq binding width.Also,
+the peak detection window half size is estimated based on binding width.
 }
 \examples{
 bam <- system.file("extdata", "chipseq.bam", package="gcapc")
