@@ -9,7 +9,7 @@ Description: Peak calling for ChIP-seq data with
     linear mixture models using weighted GC strategy,
     then applied into peak significance estimation.
 Depends:
-    R (>= 3.3.1)
+    R (>= 3.4)
 Imports:
     BiocGenerics,
     GenomeInfoDb,
