@@ -46,7 +46,7 @@
 #' peaksCAT(peaks1, peaks2, ranks=seq(100,200,5), ylim=c(0,1))
 
 peaksCAT <- function(x,y,ranks=seq(200,20000,50),
-                         esx=1,esy=1,add=FALSE,...){
+                     esx=1,esy=1,add=FALSE,...){
     fo <- findOverlaps(x,y)
     xfo <- queryHits(fo)
     yfo <- subjectHits(fo)

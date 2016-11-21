@@ -5,7 +5,8 @@
 \title{GC Effects Aware Peak Calling}
 \usage{
 gcapcPeaks(cov, gcbias, bdwidth, flank = NULL, prefilter = 4L,
-  permute = 5L, pv = 0.05, plot = FALSE, genome = "hg19")
+  permute = 5L, pv = 0.05, plot = FALSE, genome = "hg19",
+  method = c("default", "tricube"))
 }
 \arguments{
 \item{cov}{A list object returned by function \code{read5endCoverage}.}
@@ -48,6 +49,13 @@ this reference genome specified in a way that is accepted by the
 software package. In that case the corresponding BSgenome data package
 needs to be already installed (see \code{?\link[BSgenome]{getBSgenome}} in
 the \pkg{BSgenome} package for the details).}
+
+\item{method}{A character vector specifying choice of method to calculate
+effective GC content. Default is based on uniformed fragment distribution.
+A more smoother method based on tricube assumption is also allowed. 
+However, tricube should be not used if estimated peak half size is 3 times 
+or more larger than estimated bind width. The method chosen here needs to
+be the same as it is when calculating \code{gcbias}.}
 }
 \value{
 A GRanges of peaks with meta columns:

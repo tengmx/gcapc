@@ -61,6 +61,12 @@
 #' software package. In that case the corresponding BSgenome data package
 #' needs to be already installed (see \code{?\link[BSgenome]{getBSgenome}} in
 #' the \pkg{BSgenome} package for the details).
+#' 
+#' @param method A character vector specifying choice of method to calculate
+#' effective GC content. Default is based on uniformed fragment distribution.
+#' A more smoother method based on tricube assumption is also allowed. 
+#' However, tricube should be not used if estimated peak half size is 3 times 
+#' or more larger than estimated bind width.
 #'
 #' @return A list of objects
 #' \item{glm0}{Estimated generalized linear model for background GC effects.}
@@ -96,15 +102,17 @@
 
 gcEffects <- function(cov,bdwidth,flank=NULL,samp=0.05,plot=TRUE,
                       gcrange=c(0.3,0.8),mu0=1,mu1=50,p=0.02,converge=1e-3,
-                      emtrace=TRUE,genome="hg19"){
+                      emtrace=TRUE,genome="hg19",
+                      method=c("default","tricube")){
     genome <- getBSgenome(genome)
+    mthd <- match.arg(method)
     bdw <- bdwidth[1]
     halfbdw <- floor(bdw/2)
     if(is.null(flank)){
-      pdwh <- bdwidth[2]
-      flank <- pdwh-bdw+halfbdw
+        pdwh <- bdwidth[2]
+        flank <- pdwh-bdw+halfbdw
     }else{
-      pdwh <- flank+bdw-halfbdw
+        pdwh <- flank+bdw-halfbdw
     }
     ### regions and reads count
     cat("Starting to estimate GC effects.\n")
@@ -116,21 +124,21 @@ gcEffects <- function(cov,bdwidth,flank=NULL,samp=0.05,plot=TRUE,
     chrs <- rep(names(seqs), times=sapply(starts, length))
     sampidx <- sort(sample.int(length(chrs),ceiling(length(chrs)*samp)))
     region <- GRanges(chrs[sampidx], IRanges(start=unlist(starts)[sampidx],
-                                       end=unlist(ends)[sampidx]))
+                  end=unlist(ends)[sampidx]))
     cat("......... Estimating using",length(region),"regions\n")
     regionsp <- resize(split(region,seqnames(region)),pdwh)
     cat("...... Counting reads\n")
     rcfwd <- unlist(viewSums(Views(cov$fwd,
-                            ranges(shift(regionsp,-flank)))))
+                 ranges(shift(regionsp,-flank)))))
     rcrev <- unlist(viewSums(Views(cov$rev,
-                            ranges(shift(regionsp,halfbdw)))))
+                 ranges(shift(regionsp,halfbdw)))))
     if(plot){
         layout(matrix(1:2,1,2))
         idxx <- sample.int(length(region),min(50000,length(region)))
         plot(rcfwd[idxx],rcrev[idxx],
-             main=paste('rc: shifted',halfbdw,"; cor:",
-                        round(cor(rcfwd,rcrev),3),"; flank:",flank),
-             ylab='reverse strand',xlab='forward strand')
+            main=paste('RC: shifted',halfbdw,"; CORR:",
+            round(cor(rcfwd,rcrev),3),"; Flank:",flank),
+            ylab='Reverse strand',xlab='Forward strand')
     }
     ### effective gc content
     cat("...... Calculating GC content with flanking",flank,"\n")
@@ -138,9 +146,14 @@ gcEffects <- function(cov,bdwidth,flank=NULL,samp=0.05,plot=TRUE,
     nr <- shift(resize(region,rwidth + flank*2),-flank)
     seqs <- getSeq(genome,nr)
     gcpos <- startIndex(vmatchPattern("S", seqs, fixed="subject"))
-    w <- flank+halfbdw
-    weight <- (1-abs(seq(-w,w)/w)^3)^3
-    weight <- weight/sum(weight)
+    if(mthd=="default"){
+        weight <- c(seq_len(flank),rep(flank+1,bdw),rev(seq_len(flank)))
+        weight <- weight/sum(weight)
+    }else if(mthd=="tricube"){
+        w <- flank+halfbdw
+        weight <- (1-abs(seq(-w,w)/w)^3)^3
+        weight <- weight/sum(weight)
+    }
     gc <- round(sapply(gcpos,function(x) sum(weight[x])),3)
     ### em algorithms
     cat("...... Estimating GC effects\n")
@@ -178,15 +191,15 @@ gcEffects <- function(cov,bdwidth,flank=NULL,samp=0.05,plot=TRUE,
     }
     ### gc effects
     gcbias <- list(glm0=lmns0,glm1=lmns1,
-                   mu0=predY0,mu1=predY1,z=z,p=p,ll=llf)
+                  mu0=predY0,mu1=predY1,z=z,p=p,ll=llf)
     if(plot){
         tmp <- sum(idx)
         idx0 <- sample.int(tmp,min(100000,tmp))
         rbPal <- colorRampPalette(c('green','orange'))
         color <- rbPal(20)[as.numeric(cut(gcbias$z[idx0],breaks = 20))]
         plot(gc[idx0],rc[idx][idx0]+0.5,col=color,xlim=gcrange,
-             pch=20,main="gc effects",
-             xlab='gc content',ylab="reads count",log='y',yaxt='n')
+            pch=20,main="GC Effects",
+            xlab='Effective GC content',ylab="Read counts",log='y',yaxt='n')
         idx00 <- sample.int(tmp,min(5000,tmp))
         idx00 <- idx00[order(gc[idx00])]
         lines(gc[idx00],gcbias$mu1[idx00]+0.5,col='red',lwd=3)

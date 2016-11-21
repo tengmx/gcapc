@@ -133,11 +133,6 @@ width is further treated as the size of region unit for effective GC
 bias estimation and peak calling. Peak detection half 
 window size is used to define width of flanking regions.
 
-```{r bdwidth}
-bdw <- bindWidth(cov)
-bdw
-```
-
 If additional information is known from sequencing fragments, this step
 could be speeded up. For example, narrowing down the range size helps.
 

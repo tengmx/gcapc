@@ -6,7 +6,8 @@
 \usage{
 gcEffects(cov, bdwidth, flank = NULL, samp = 0.05, plot = TRUE,
   gcrange = c(0.3, 0.8), mu0 = 1, mu1 = 50, p = 0.02,
-  converge = 0.001, emtrace = TRUE, genome = "hg19")
+  converge = 0.001, emtrace = TRUE, genome = "hg19",
+  method = c("default", "tricube"))
 }
 \arguments{
 \item{cov}{A list object returned by function \code{read5endCoverage}.}
@@ -63,6 +64,12 @@ this reference genome specified in a way that is accepted by the
 software package. In that case the corresponding BSgenome data package
 needs to be already installed (see \code{?\link[BSgenome]{getBSgenome}} in
 the \pkg{BSgenome} package for the details).}
+
+\item{method}{A character vector specifying choice of method to calculate
+effective GC content. Default is based on uniformed fragment distribution.
+A more smoother method based on tricube assumption is also allowed. 
+However, tricube should be not used if estimated peak half size is 3 times 
+or more larger than estimated bind width.}
 }
 \value{
 A list of objects

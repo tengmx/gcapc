@@ -46,6 +46,13 @@
 #' software package. In that case the corresponding BSgenome data package
 #' needs to be already installed (see \code{?\link[BSgenome]{getBSgenome}} in
 #' the \pkg{BSgenome} package for the details).
+#' 
+#' @param method A character vector specifying choice of method to calculate
+#' effective GC content. Default is based on uniformed fragment distribution.
+#' A more smoother method based on tricube assumption is also allowed. 
+#' However, tricube should be not used if estimated peak half size is 3 times 
+#' or more larger than estimated bind width. The method chosen here needs to
+#' be the same as it is when calculating \code{gcbias}.
 #'
 #' @return A GRanges of peaks with meta columns:
 #' \item{es}{Estimated enrichment score.}
@@ -76,15 +83,17 @@
 #' gcapcPeaks(cov, gcb, bdw)
 
 gcapcPeaks <- function(cov,gcbias,bdwidth,flank=NULL,prefilter=4L,
-                       permute=5L,pv=0.05,plot=FALSE,genome="hg19"){
+                       permute=5L,pv=0.05,plot=FALSE,genome="hg19",
+                       method=c("default","tricube")){
     genome <- getBSgenome(genome)
+    mthd <- match.arg(method)
     bdw <- bdwidth[1]
     halfbdw <- floor(bdw/2)
     if(is.null(flank)){
-      pdwh <- bdwidth[2]
-      flank <- pdwh-bdw+halfbdw
+        pdwh <- bdwidth[2]
+        flank <- pdwh-bdw+halfbdw
     }else{
-      pdwh <- flank+bdw-halfbdw
+        pdwh <- flank+bdw-halfbdw
     }
     cat("Starting to call peaks.\n")
     ### prefiltering regions
@@ -97,14 +106,14 @@ gcapcPeaks <- function(cov,gcbias,bdwidth,flank=NULL,prefilter=4L,
     region <- GRanges(chrs, IRanges(start=unlist(starts),end=unlist(ends)))
     regionsp <- resize(split(region,seqnames(region)),pdwh)
     rcfwd <- unlist(viewSums(Views(cov$fwd,
-                                   ranges(shift(regionsp,-flank)))))
+                 ranges(shift(regionsp,-flank)))))
     rcrev <- unlist(viewSums(Views(cov$rev,
-                                   ranges(shift(regionsp,halfbdw)))))
+                 ranges(shift(regionsp,halfbdw)))))
     regions <- region[rcfwd+rcrev >= prefilter]
     rm(seqs,starts,ends,chrs,region,regionsp,rcfwd,rcrev)
     ## extend both ends
     regionsrc <- reduce(shift(resize(regions,halfbdw*6+flank*2+1),
-                              -halfbdw*2-flank))
+                     -halfbdw*2-flank))
     regionsgc <- shift(resize(regionsrc,width(regionsrc)+halfbdw*2),-halfbdw)
     rm(regions)
     ### gc content
@@ -112,9 +121,14 @@ gcapcPeaks <- function(cov,gcbias,bdwidth,flank=NULL,prefilter=4L,
     nr <- shift(resize(regionsgc,width(regionsgc)+flank*2),-flank)
     seqs <- getSeq(genome,nr)
     gcpos <- startIndex(vmatchPattern("S", seqs, fixed="subject"))
-    w <- flank+halfbdw
-    weight <- (1-abs(seq(-w,w)/w)^3)^3
-    weight <- weight/sum(weight)
+    if(mthd=="default"){
+      weight <- c(seq_len(flank),rep(flank+1,bdw),rev(seq_len(flank)))
+      weight <- weight/sum(weight)
+    }else if(mthd=="tricube"){
+      w <- flank+halfbdw
+      weight <- (1-abs(seq(-w,w)/w)^3)^3
+      weight <- weight/sum(weight)
+    }
     gcposb <- vector("integer",sum(width(nr)))
     gcposbi <- rep(seq_along(nr),times=width(nr))
     gcposbsp <- split(gcposb,gcposbi)
@@ -128,12 +142,12 @@ gcapcPeaks <- function(cov,gcbias,bdwidth,flank=NULL,prefilter=4L,
     gc <- split(gcnum,gcnumi)
     for(i in seq_along(nr)){
         gc[[i]] <- round(runwtsum(gcposbsprle[[i]],k=length(weight),
-                                  wt=weight),3)
+                       wt=weight),3)
         if(i%%500 == 0) cat('.')
     }
     cat('\n')
     rm(regionsgc,nr,seqs,gcpos,gcposb,gcposbi,
-       gcposbsp,gcposbsprle,gcnuml,gcnum,gcnumi)
+        gcposbsp,gcposbsprle,gcnuml,gcnum,gcnumi)
     ### gc weight
     cat("...... caculating GC effect weights\n")
     gcbase <- round(seq(0,1,0.001),3)
@@ -144,20 +158,19 @@ gcapcPeaks <- function(cov,gcbias,bdwidth,flank=NULL,prefilter=4L,
     ### reads count
     regionrcsp <- split(regionsrc,seqnames(regionsrc))
     rcfwd <- RleList(unlist(viewApply(Views(cov$fwd,ranges(regionrcsp)),
-                                      runsum,k=pdwh)))
+                 runsum,k=pdwh)))
     rcrev <- RleList(unlist(viewApply(Views(cov$rev,ranges(regionrcsp)),
-                                      runsum,k=pdwh)))
+                 runsum,k=pdwh)))
     ### enrichment score
     cat("...... estimating enrichment score\n")
     esl <- width(regionsrc)-halfbdw*2-flank*2
     ir1 <- IRangesList(start=IntegerList(as.list(rep(1,length(esl)))),
-                       end=IntegerList(as.list(esl)))
+               end=IntegerList(as.list(esl)))
     ir2 <- IRangesList(start=IntegerList(as.list(rep(1+halfbdw+flank,
-                       length(esl)))),
-                       end=halfbdw+flank+IntegerList(as.list(esl)))
+               length(esl)))),end=halfbdw+flank+IntegerList(as.list(esl)))
     ir3 <- IRangesList(start=IntegerList(as.list(rep(1+halfbdw*2+flank*2,
-                       length(esl)))),
-                       end=halfbdw*2+flank*2+IntegerList(as.list(esl)))
+               length(esl)))),
+               end=halfbdw*2+flank*2+IntegerList(as.list(esl)))
     rc1 <- rcfwd[ir1]
     rc2 <- rcfwd[ir2]
     rc3 <- rcrev[ir1]
@@ -172,28 +185,29 @@ gcapcPeaks <- function(cov,gcbias,bdwidth,flank=NULL,prefilter=4L,
     cat("...... permutation analysis\n")
     esprlt <- RleList()
     for(i in seq_len(permute)){
-      covfwdp <- cov$fwd[ranges(regionrcsp)]
-      covrevp <- cov$rev[ranges(regionrcsp)]
-      for(i in seq_along(cov$fwd)){
-        covfwdp[[i]] <- covfwdp[[i]][sample.int(length(covfwdp[[i]]))]
-        covrevp[[i]] <- covrevp[[i]][sample.int(length(covrevp[[i]]))]
-      }
-      end <- cumsum(width(regionrcsp))
-      start <- end-width(regionrcsp)+1
-      regionrcspp <- IRangesList(start=start,end=end)
-      rcfwdp <- RleList(unlist(viewApply(Views(covfwdp,regionrcspp),
+        covfwdp <- cov$fwd[ranges(regionrcsp)]
+        covrevp <- cov$rev[ranges(regionrcsp)]
+        for(i in seq_along(cov$fwd)){
+            covfwdp[[i]] <- covfwdp[[i]][sample.int(length(covfwdp[[i]]))]
+            covrevp[[i]] <- covrevp[[i]][sample.int(length(covrevp[[i]]))]
+        }
+        end <- cumsum(width(regionrcsp))
+        start <- end-width(regionrcsp)+1
+        regionrcspp <- IRangesList(start=start,end=end)
+        rcfwdp <- RleList(unlist(viewApply(Views(covfwdp,regionrcspp),
                                          runsum,k=pdwh)))
-      rcrevp <- RleList(unlist(viewApply(Views(covrevp,regionrcspp),
+        rcrevp <- RleList(unlist(viewApply(Views(covrevp,regionrcspp),
                                          runsum,k=pdwh)))
-      rcp1 <- rcfwdp[ir1]
-      rcp2 <- rcfwdp[ir2]
-      rcp3 <- rcrevp[ir1]
-      rcp4 <- rcrevp[ir2]
-      esprlt <- c(esprlt,round(2*sqrt(rcp1*rcp4)*gcw1-rcp3*gcw3-rcp2*gcw2,3))
+        rcp1 <- rcfwdp[ir1]
+        rcp2 <- rcfwdp[ir2]
+        rcp3 <- rcrevp[ir1]
+        rcp4 <- rcrevp[ir2]
+        esprlt <- c(esprlt,
+                    round(2*sqrt(rcp1*rcp4)*gcw1-rcp3*gcw3-rcp2*gcw2,3))
     }
     perm <- as.numeric(unlist(esprlt,use.names=FALSE))
     rm(covfwdp,covrevp,start,end,regionrcspp,rcp1,rcp2,rcp3,rcp4,
-       rcfwdp,rcrevp,gcw1,gcw2,gcw3,esprlt,esl)
+        rcfwdp,rcrevp,gcw1,gcw2,gcw3,esprlt,esl)
     ### report peaks
     cat('...... reporting peaks\n')
     sccut <- quantile(perm,1-pv)
@@ -202,18 +216,18 @@ gcapcPeaks <- function(cov,gcbias,bdwidth,flank=NULL,prefilter=4L,
         cat('......... ploting enrichment scores\n')
         es <- as.numeric(unlist(esrlt,use.names=FALSE))
         plot(density(perm,bw=1),col='blue',xlab='enrichment score',
-             xlim=range(es),main=paste('es determined by pvalue',pv))
+            xlim=range(es),main=paste('es determined by pvalue',pv))
         lines(density(es,bw=1),col='red')
         abline(v=sccut,lty=2,col='purple')
         legend('topright',c('real','perm'),lty=1,
-               col=c('red','blue'),bty='n')
+            col=c('red','blue'),bty='n')
         rm(es)
     }
     cat('......... reporting peak bumps\n')
     esrltsl <- slice(esrlt,sccut,rangesOnly=TRUE)
     esrltsl0 <- slice(esrlt,0,rangesOnly=TRUE)
     esrltsle <- reduce(shift(resize(esrltsl,width(esrltsl)+halfbdw*2),
-                             -halfbdw))
+                    -halfbdw))
     peaksir <- intersect(esrltsl0,esrltsle)
     peaksir <- peaksir[width(peaksir)>=halfbdw]
     rm(esrltsl,esrltsl0,esrltsle)
@@ -221,13 +235,13 @@ gcapcPeaks <- function(cov,gcbias,bdwidth,flank=NULL,prefilter=4L,
     peaksir <- unlist(peaksir)
     regionids <- as.integer(names(peaksir))
     peaksirlst <- IRangesList(start=IntegerList(as.list(start(peaksir))),
-                              end=IntegerList(as.list(end(peaksir))))
+                      end=IntegerList(as.list(end(peaksir))))
     peaksc <- max(esrlt[regionids][peaksirlst])
     peaksir <- shift(peaksir,start(regionsrc)[regionids]+halfbdw+flank)
     peaks <- GRanges(seqnames(regionsrc)[regionids],peaksir,es=peaksc)
     peaksrd <- reduce(peaks,min.gapwidth=halfbdw,with.revmap=TRUE)
     mcols(peaksrd)$es <- sapply(mcols(peaksrd)$revmap,function(i)
-                                max(mcols(peaks)$es[i]))
+                             max(mcols(peaks)$es[i]))
     mcols(peaksrd)$revmap <- NULL
     pvs <- ecdf(perm)
     mcols(peaksrd)$pv <- 1 - pvs(mcols(peaksrd)$es)

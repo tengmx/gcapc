@@ -43,21 +43,21 @@
 #' read5endCoverage(bam)
 
 read5endCoverage <- function(bam,chroms=NULL,mapq=30L,duplicate=FALSE,
-                   flag=scanBamFlag(isUnmappedQuery=FALSE,
-                       isSecondaryAlignment=FALSE,
-                       isNotPassingQualityControls=FALSE)){
+                             flag=scanBamFlag(isUnmappedQuery=FALSE,
+                             isSecondaryAlignment=FALSE,
+                             isNotPassingQualityControls=FALSE)){
     baminfo <- seqinfo(BamFile(bam))
     if(!is.null(chroms)) {
         if(sum(!(chroms %in% seqlevels(baminfo)))>0)
             stop("chromosome names not compatible with bam files")
         gal <- readGAlignments(bam,param=ScanBamParam(what = "mapq",
-                                         flag = flag, mapqFilter = mapq,
-                                         which = GRanges(baminfo)[chroms]))
+                   flag = flag, mapqFilter = mapq,
+                   which = GRanges(baminfo)[chroms]))
         gr <- granges(gal)
         seqlevels(gr, force=TRUE) <- chroms
     }else{
         gal <- readGAlignments(bam,param=ScanBamParam(what = "mapq",
-                                         flag = flag, mapqFilter = mapq))
+                   flag = flag, mapqFilter = mapq))
         gr <- granges(gal)
     }
     grf <- resize(gr[strand(gr)=="+"],1)

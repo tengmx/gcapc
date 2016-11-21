@@ -65,25 +65,25 @@ bindWidth <- function(cov,range=c(50L,500L),step=50L,odd=TRUE){
         viewpos <- Views(cov$fwd,regionpos)
         viewneg <- Views(cov$rev,regionneg)
         cors <- sapply(seq_along(viewpos),function(i)
-                       cor(viewpos[[i]],viewneg[[i]]))
+                    cor(viewpos[[i]],viewneg[[i]]))
         corsall <- colSums(t(cors) * readsum / sum(readsum))
         #if(cycle==1) plot(shifts,corsall)
         if(step>1){
-          range <- shifts[which.max(corsall)]+c(-step,step)
-          step <- max(round(step/5),1)
-          cycle <- cycle + 1
-          shifts <- seq(range[1],range[2],step)
+            range <- shifts[which.max(corsall)]+c(-step,step)
+            step <- max(round(step/5),1)
+            cycle <- cycle + 1
+            shifts <- seq(range[1],range[2],step)
         }else if(w2==0){
-          w1 <- shifts[which.max(corsall)]
-          cc <- max(corsall)
-          tmp <- seq(0,rangein[2],5)
-          shifts <- tmp[tmp > w1]
-          cycle <- 'final'
-          w2 <- 1
+            w1 <- shifts[which.max(corsall)]
+            cc <- max(corsall)
+            tmp <- seq(0,rangein[2],5)
+            shifts <- tmp[tmp > w1]
+            cycle <- 'final'
+            w2 <- 1
         }else{
-          ccw <- (cc-corsall[length(corsall)])/3+corsall[length(corsall)]
-          w2 <- min(max(shifts[corsall>=ccw]),w1*2,rangein[2])
-          break
+            ccw <- (cc-corsall[length(corsall)])/3+corsall[length(corsall)]
+            w2 <- min(max(shifts[corsall>=ccw]),w1*2,rangein[2])
+            break
         }
     }
     if(odd && w1%%2==0) w1 <- w1 + 1
@@ -99,16 +99,16 @@ bindWidth <- function(cov,range=c(50L,500L),step=50L,odd=TRUE){
     chrs <- rep(names(seqs), times=sapply(starts, length))
     sampidx <- sort(sample.int(length(chrs),ceiling(length(chrs)*0.05)))
     region <- GRanges(chrs[sampidx], IRanges(start=unlist(starts)[sampidx],
-                                             end=unlist(ends)[sampidx]))
+                  end=unlist(ends)[sampidx]))
     pdwhs <- seq(w2,w1,-5)
     corr <- c()
     for(pdwh in pdwhs){
       flank <- pdwh-w1+halfbdw
       regionsp <- resize(split(region,seqnames(region)),pdwh)
       rcfwd <- unlist(viewSums(Views(cov$fwd,
-                                   ranges(shift(regionsp,-flank)))))
+                   ranges(shift(regionsp,-flank)))))
       rcrev <- unlist(viewSums(Views(cov$rev,
-                                   ranges(shift(regionsp,halfbdw)))))
+                   ranges(shift(regionsp,halfbdw)))))
       corr <- c(corr,cor(rcfwd,rcrev))
       cat('.')
     }
