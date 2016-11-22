@@ -152,9 +152,9 @@ gcapcPeaks <- function(cov,gcbias,bdwidth,flank=NULL,prefilter=4L,
     cat("...... caculating GC effect weights\n")
     gcbase <- round(seq(0,1,0.001),3)
     mu0 <- predict(gcbias$glm0,data.frame(gc = gcbase),type="response")
-    gcwbase <- round(Rle(median(gcbias$mu0[gcbias$z>0.5])/mu0),3)
-    gcw <- RleList(lapply(gc,function(x) gcwbase[x*1000+1])) # slow
-    rm(gcbase,mu0,gc)
+    gcwbase0 <- round(Rle(median(gcbias$mu0[gcbias$z>0.5])/mu0),3)
+    gcw <- RleList(lapply(gc,function(x) gcwbase0[x*1000+1])) # slow
+    rm(gc,gcbase,mu0,gcwbase0)
     ### reads count
     regionrcsp <- split(regionsrc,seqnames(regionsrc))
     rcfwd <- RleList(unlist(viewApply(Views(cov$fwd,ranges(regionrcsp)),
@@ -207,10 +207,12 @@ gcapcPeaks <- function(cov,gcbias,bdwidth,flank=NULL,prefilter=4L,
     }
     perm <- as.numeric(unlist(esprlt,use.names=FALSE))
     rm(covfwdp,covrevp,start,end,regionrcspp,rcp1,rcp2,rcp3,rcp4,
-        rcfwdp,rcrevp,gcw1,gcw2,gcw3,esprlt,esl)
+        rcfwdp,rcrevp,gcw1,gcw2,gcw3,esprlt,esl,regionrcsp)
     ### report peaks
     cat('...... reporting peaks\n')
     sccut <- quantile(perm,1-pv)
+    pvs <- ecdf(perm)
+    minpv <- 1/length(perm)
     cat('......... enrichment scores cut at',sccut,'\n')
     if(plot){
         cat('......... ploting enrichment scores\n')
@@ -223,6 +225,7 @@ gcapcPeaks <- function(cov,gcbias,bdwidth,flank=NULL,prefilter=4L,
             col=c('red','blue'),bty='n')
         rm(es)
     }
+    rm(perm)
     cat('......... reporting peak bumps\n')
     esrltsl <- slice(esrlt,sccut,rangesOnly=TRUE)
     esrltsl0 <- slice(esrlt,0,rangesOnly=TRUE)
@@ -243,8 +246,7 @@ gcapcPeaks <- function(cov,gcbias,bdwidth,flank=NULL,prefilter=4L,
     mcols(peaksrd)$es <- sapply(mcols(peaksrd)$revmap,function(i)
                              max(mcols(peaks)$es[i]))
     mcols(peaksrd)$revmap <- NULL
-    pvs <- ecdf(perm)
     mcols(peaksrd)$pv <- 1 - pvs(mcols(peaksrd)$es)
-    peaksrd$pv[peaksrd$pv==0] <- 1/length(perm)
+    peaksrd$pv[peaksrd$pv==0] <- minpv
     peaksrd
 }

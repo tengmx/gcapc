@@ -3,7 +3,7 @@ title: "The *gcapc* user's guide"
 author: |
   | Mingxiang Teng <mxteng@jimmy.harvard.edu>
   | Rafael A. Irizarry <rafa@jimmy.harvard.edu>
-  | Department of Biostatistics, Dana-Farber Cancer Institute,
+  | Department of Biostatistics, Dana-Farber Cancer Institute &
   | Harvard T.H. Chan School of Public Health, Boston, MA, USA
 date: "`r Sys.Date()`"
 output:
@@ -23,6 +23,7 @@ BiocStyle::markdown()
 knitr::opts_chunk$set(dev="png",fig.show="hold",
                fig.width=8,fig.height=4.5,fig.align="center",
                message=FALSE,collapse=TRUE)
+set.seed(1)
 ```
 
 # Introduction
@@ -151,7 +152,6 @@ default to display the trace of log likelihood changes, and other
 notification messages are printed for courtesy.
 
 ```{r gcbias}
-set.seed(1)
 gcb <- gcEffects(cov, bdw, samp=0.25, plot=TRUE)
 ```
 

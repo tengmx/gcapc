@@ -125,6 +125,7 @@ gcEffects <- function(cov,bdwidth,flank=NULL,samp=0.05,plot=TRUE,
     sampidx <- sort(sample.int(length(chrs),ceiling(length(chrs)*samp)))
     region <- GRanges(chrs[sampidx], IRanges(start=unlist(starts)[sampidx],
                   end=unlist(ends)[sampidx]))
+    rm(seqs,starts,ends,chrs,sampidx)
     cat("......... Estimating using",length(region),"regions\n")
     regionsp <- resize(split(region,seqnames(region)),pdwh)
     cat("...... Counting reads\n")
@@ -139,7 +140,9 @@ gcEffects <- function(cov,bdwidth,flank=NULL,samp=0.05,plot=TRUE,
             main=paste('RC: shifted',halfbdw,"; CORR:",
             round(cor(rcfwd,rcrev),3),"; Flank:",flank),
             ylab='Reverse strand',xlab='Forward strand')
+        rm(idxx)
     }
+    rm(regionsp)
     ### effective gc content
     cat("...... Calculating GC content with flanking",flank,"\n")
     rwidth <- width(region[1])
@@ -155,6 +158,7 @@ gcEffects <- function(cov,bdwidth,flank=NULL,samp=0.05,plot=TRUE,
         weight <- weight/sum(weight)
     }
     gc <- round(sapply(gcpos,function(x) sum(weight[x])),3)
+    rm(rwidth,nr,seqs,gcpos,region)
     ### em algorithms
     cat("...... Estimating GC effects\n")
     gc <- rep(gc,2)

@@ -86,6 +86,7 @@ bindWidth <- function(cov,range=c(50L,500L),step=50L,odd=TRUE){
             break
         }
     }
+    rm(viewpos,viewneg)
     if(odd && w1%%2==0) w1 <- w1 + 1
     cat("...... Estimated bind width as",w1,"\n")
     cat("...... Estimated peak window half size as",w2,"\n")
@@ -100,6 +101,7 @@ bindWidth <- function(cov,range=c(50L,500L),step=50L,odd=TRUE){
     sampidx <- sort(sample.int(length(chrs),ceiling(length(chrs)*0.05)))
     region <- GRanges(chrs[sampidx], IRanges(start=unlist(starts)[sampidx],
                   end=unlist(ends)[sampidx]))
+    rm(seqs,starts,ends,chrs,sampidx)
     pdwhs <- seq(w2,w1,-5)
     corr <- c()
     for(pdwh in pdwhs){
