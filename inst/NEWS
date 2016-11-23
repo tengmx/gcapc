@@ -1,9 +1,9 @@
 * version 0.99.x
     - Submit to Bioconductor (0)
-    - vmatchPattern function (1 & 2)
+    - vmatchPattern function (1-2)
     - tricube smoothed weight (3)
     - optimized permutation (4)
     - detection half size & read counts (5)
-    - minor bugs (6 & 7)
+    - minor bugs (6-7)
     - both default and tricube weight allowed (8)
-    - minor changes (9)
+    - minor changes (9-10)
