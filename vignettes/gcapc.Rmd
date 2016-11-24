@@ -7,7 +7,7 @@ author: |
   | Harvard T.H. Chan School of Public Health, Boston, MA, USA
 date: "`r Sys.Date()`"
 output:
-  BiocStyle::html_document:
+  BiocStyle::pdf_document:
     toc: true
 bibliography: gcapc.bib
 graphics: yes
