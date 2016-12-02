@@ -10,7 +10,7 @@ this deficiency by modeling GC effects into peak calling.
 
 ### Installation
 
-R-package **gcapc** can be installed:
+**gcapc** is an R-package using following installation.
 ```s
 library(devtools)
 install_github("tengmx/gcapc")
@@ -24,4 +24,7 @@ library(gcapc)
 ### Using gcapc
 
 Details of using this package, please see the 
-[vignette](https://github.com/tengmx/gcapc/blob/master/vignettes/gcapc.pdf).
+[vignette](https://github.com/tengmx/gcapc/blob/master/vignettes/gcapc.Rmd).
+
+**gcapc** has been submitted to Bioconductor, and will be available 
+there shortly.
