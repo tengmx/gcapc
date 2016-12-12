@@ -1,0 +1,196 @@
+---
+title: "The *gcapc* user's guide"
+author: |
+  | Mingxiang Teng <mxteng@jimmy.harvard.edu>
+  | Rafael A. Irizarry <rafa@jimmy.harvard.edu>
+  | Department of Biostatistics, Dana-Farber Cancer Institute &
+  | Harvard T.H. Chan School of Public Health, Boston, MA, USA
+date: "`r Sys.Date()`"
+output:
+  BiocStyle::html_document:
+    toc: true
+bibliography: gcapc.bib
+graphics: yes
+vignette: >
+  %\VignetteIndexEntry{The gcapc user's guide}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignettePackage{gcapc}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r para, echo = FALSE, results='hide'}
+BiocStyle::markdown()
+knitr::opts_chunk$set(dev="png",fig.show="hold",
+               fig.width=8,fig.height=4.5,fig.align="center",
+               message=FALSE,collapse=TRUE)
+set.seed(1)
+```
+
+# Introduction
+
+ChIP-seq has been widely utilized as the standard technology to detect
+protein binding regions, where peak calling algorithms were developed
+particularly to serve the analysis. Existing peak callers lack of power
+on ranking peaks' significance due to sequencing technology might undergo
+sequence context biases, *e.g.* GC bias. *gcapc* is designed to address this
+deficiency by modeling GC effects into peak calling.
+
+The *gcapc* R-package performs GC bias estimation, peak calling, and plots on
+intermediate results. It requires the inputs as one BAM file for ChIP-seq as
+well as other optional parameters. A common analysis contains four steps.
+
+  1. Reads coverage. In this step, BAM file records will be converted to
+  coverages on basepair resolution for forward and reverse strands 
+  separately.
+
+  1. Binding width estimation. This parameter is a measurement for the size
+  of protein binding region in crosslinked complexes of ChIP experiments. 
+  Also, peak detection half size are estimated based on region signals from
+  two strands.
+
+  1. GC effects estimation. Generalized linear mixture models followed by EM
+  algorithms are performed to evaluate potential GC effects.
+  
+  1. Peak calling. Enrichment scores are evaluated by permutation analysis
+  for significance. Peaks are reported with enrichment scores and p-values.
+
+# Getting Started
+
+Load the package in R
+
+```{r library}
+library(gcapc)
+```
+
+# Preparing Inputs
+
+The inputs could be as minimum as a path to a BAM file, which is an
+indexed alignment records for sequencing reads. However, additional
+options are encouraged to be specified to accelerate the analysis and
+improve the accuracy. The following set are the options which can be
+customized by users.
+
+  1. BAM records filtering options. In the function *read5endCoverage*,
+  reads can be filtered for selected chromosomes, mapping quality,
+  duplicate removal, etc. Downstream analysis could be highly accelerated
+  if only a subset of chromosomes are analyzed. This actually suggests
+  a divide and conquer strategy if one ChIP-seq experiment is extremely
+  deeply sequenced.
+
+  1. Sequencing fragments options. If one has prior knowledge on the
+  size of sequencing fragments. The optional arguments in function
+  *bindWidth* could be specified to limit searching in narrower
+  ranges; Or, this function can be omitted if binding width are known
+  in advance. Note that this binding width might not be equivalent to
+  the binding width of protein in biology, since it could be affected
+  by crosslinking operations.
+
+  1. Sampling size for GC effects estimation. The default is 0.05, which
+  means 5% of genome will be used if analysis is based on whole genome.
+  However, for smaller genomes or small subset of chromosomes, this size
+  should be tuned higher to ensure accuracy. In the other hand, larger
+  size results longer computation of GC effects estimation.
+
+  1. EM algorithm priors and convergence. Options for EM algorithms can
+  be tuned to accelerate the iterations.
+
+  1. Permutation times. As we suggested in the function help page, a
+  proper times of permutation could save time as well as ensuring accuracy.
+
+In this vignette, we will use enbedded file *chipseq.bam* as one example
+to illustrate this package. This file contains about ~80000 reads from
+human chromosome 21 for CTCF ChIP-seq data.
+
+```{r data}
+bam <- system.file("extdata", "chipseq.bam", package="gcapc")
+```
+
+# Peak Calling
+
+For details of peak calling algorithms, please refer to our paper [@teng].
+
+## Reads coverage
+
+The first step is to generate the reads coverage for both forward and reverse
+strands. The coverage is based on single nucleotide resolution and uses only
+the 5' end of BAM records. That means, if duplicates are not allowed, the
+maximum coverage for every nucleotide is 1.
+
+```{r rc5end}
+cov <- read5endCoverage(bam)
+cov
+```
+
+Obejct *cov* is a two-element list representing coverages for forward and
+reverse strands, respectively, while each element is a list for coverages
+on individual chromosomes.
+
+## Binding width
+
+The second step is to estimate the binding width and peak detection half 
+window size of ChIP-seq experiment.
+This step could be omitted if binding width is known in advance. Binding
+width is further treated as the size of region unit for effective GC
+bias estimation and peak calling. Peak detection half 
+window size is used to define width of flanking regions.
+
+If additional information is known from sequencing fragments, this step
+could be speeded up. For example, narrowing down the range size helps.
+
+```{r bdwidth1}
+bdw <- bindWidth(cov, range=c(50L,300L), step=10L)
+bdw
+```
+
+## GC effects
+
+This step performs GC effects estimation using the proposed models. It is
+noted that by allowing to display the plots, one can view intermediate
+results which provide you direct sense on your ChIP-seq data, such as the
+extent of GC effects. Also, the EM algorithms iterations are enabled by
+default to display the trace of log likelihood changes, and other
+notification messages are printed for courtesy.
+
+```{r gcbias}
+gcb <- gcEffects(cov, bdw, samp=0.25, plot=TRUE)
+```
+
+Here, the left figure provides the correlation between forward and reverse
+strands signals, by using the estimated binding width as region unit.
+The right figure shows the raw and predicted GC effects using mixture model.
+The effect for the background regions will be utilized in downstream
+analysis.
+
+## Peak significance
+
+This is the last step of *gcapc*. It uses information generated in previous
+steps, calculates enrichment scores and performs permutation analysis to
+propose significant peak regions. Final peaks are formated into *GRanges*
+object, and meta columns are used to record significance. Additional
+notification messages are also printed.
+
+```{r gcapc}
+layout(matrix(1:2,1,2))
+peaks <- gcapcPeaks(cov, gcb, bdw, plot=TRUE, permute=50L)
+peaks <- gcapcPeaks(cov, gcb, bdw, plot=TRUE, permute=100L)
+peaks
+```
+
+It is noted that here two tests using different number of permutation times
+results almost the same cutoff on enrichment scores, which suggests small
+number of permutations are allowed to save time. The left figure shows here
+the cutoff on enrichment scores based on 50 times of permutations, and 
+right figure shows it based on 100 times of permutations. Note that we only
+used chromosome 21 for illustration, and thus increased permutation times
+from default 10 to 50 here.
+
+# Summary
+
+In this vignette, we went through main functions in this package, and
+illustrated how they work. By easily following these steps, users could
+call peaks based on ChIP-seq data. Note that this package is not limited to
+protein binding ChIP-seq experiments. It can be used in Histone studies as
+well, since the protein binding width in this algorithm is actually a feature
+of crosslinked complex instead of real biological protein binding.
+
+# References
