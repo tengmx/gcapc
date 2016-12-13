@@ -21,7 +21,8 @@ library(devtools)
 install_github("tengmx/gcapc")
 ```
 
-Alternatively, it can be installed through Bioconductor using following code.
+Alternatively, it can be installed through Bioconductor by following code
+(available soon).
 ```s
 source("https://bioconductor.org/biocLite.R")
 biocLite("gcapc")
