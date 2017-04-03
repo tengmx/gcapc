@@ -1,13 +1,13 @@
 citEntry(entry = "article",
          title =
          paste("Accounting for GC-content bias reduces systematic",
-               "errors and batch effects in ChIP-Seq peak callers."),
+               "errors and batch effects in ChIP-Seq data."),
          author = personList(as.person("Mingxiang Teng"),
                              as.person("Rafael A. Irizarry")),
          journal = "bioRxiv",
-         year = 2016,
+         year = 2017,
          textVersion  =
-         paste("Teng M, Irizarry RA (2016).",
+         paste("Teng M, Irizarry RA (2017).",
                "Accounting for GC-content bias reduces systematic",
-               "errors and batch effects in ChIP-Seq peak callers.")
+               "errors and batch effects in ChIP-Seq data.")
          )
