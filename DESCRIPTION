@@ -1,11 +1,11 @@
 Package: gcapc
 Title: GC Aware Peak Caller
-Version: 0.99.16
+Version: 0.99.17
 Author: Mingxiang Teng and Rafael A. Irizarry
 Maintainer: Mingxiang Teng <tengmx@gmail.com>
 Description: Peak calling for ChIP-seq data with
     consideration of potential GC bias in sequencing
-    reads. GC bias is first estimated using generalized
+    reads. GC bias is first estimated with generalized
     linear mixture models using weighted GC strategy,
     then applied into peak significance estimation.
 Depends:
@@ -30,9 +30,10 @@ Suggests:
     BiocStyle,
     knitr,
     rmarkdown,
-    BSgenome.Hsapiens.UCSC.hg19
+    BSgenome.Hsapiens.UCSC.hg19,
+    BSgenome.Mmusculus.UCSC.mm10
 URL: https://github.com/tengmx/gcapc
 License: GPL-3
 LazyData: true
 biocViews: Sequencing, ChIPSeq, BatchEffect, PeakDetection
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1

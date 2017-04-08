@@ -39,4 +39,3 @@ bam <- system.file("extdata", "chipseq.bam", package="gcapc")
 cov <- read5endCoverage(bam)
 bindWidth(cov)
 }
-

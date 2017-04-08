@@ -41,4 +41,3 @@ are provided.
 bam <- system.file("extdata", "chipseq.bam", package="gcapc")
 read5endCoverage(bam)
 }
-
