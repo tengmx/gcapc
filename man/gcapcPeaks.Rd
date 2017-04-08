@@ -75,4 +75,3 @@ bdw <- bindWidth(cov)
 gcb <- gcEffects(cov, bdw, samp = 0.15)
 gcapcPeaks(cov, gcb, bdw)
 }
-

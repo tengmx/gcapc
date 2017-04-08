@@ -94,4 +94,3 @@ cov <- read5endCoverage(bam)
 bdw <- bindWidth(cov)
 gcb <- gcEffects(cov, bdw, samp = 0.15)
 }
-

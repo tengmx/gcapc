@@ -48,4 +48,3 @@ gcb2 <- gcEffects(cov, bdw, samp=0.2, plot=FALSE)
 peaks2 <- gcapcPeaks(cov, gcb2, bdw)
 peaksCAT(peaks1, peaks2, ranks=seq(100,200,5), ylim=c(0,1))
 }
-
