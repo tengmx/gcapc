@@ -54,7 +54,7 @@ read5endCoverage <- function(bam,chroms=NULL,mapq=30L,duplicate=FALSE,
                    flag = flag, mapqFilter = mapq,
                    which = GRanges(baminfo)[chroms]))
         gr <- granges(gal)
-        seqlevels(gr, force=TRUE) <- chroms
+        seqlevels(gr, pruning.mode="coarse") <- chroms
     }else{
         gal <- readGAlignments(bam,param=ScanBamParam(what = "mapq",
                    flag = flag, mapqFilter = mapq))
