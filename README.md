@@ -49,6 +49,8 @@ You are very welcome to leave any questions/bug messages at
 
 #### Note:
 
-1. If your local R is lower than the required as shown in
+1. This repository is synchronized with the devel version 
+of *gcapc* in Bioconductor.
+2. If your local R is lower than the required as shown in
 [DESCRIPTION](https://github.com/tengmx/gcapc/blob/master/DESCRIPTION)
 file, please update R before installation.
