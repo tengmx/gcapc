@@ -4,13 +4,14 @@
 \alias{gcEffects}
 \title{ChIP-seq GC Effects Estimation}
 \usage{
-gcEffects(cov, bdwidth, flank = NULL, samp = 0.05, plot = TRUE,
-  gcrange = c(0.3, 0.8), mu0 = 1, mu1 = 50, p = 0.02,
-  converge = 0.001, emtrace = TRUE, genome = "hg19",
-  method = c("default", "tricube"))
+gcEffects(coverage, bdwidth, flank = NULL, plot = TRUE, sampling = c(0.05,
+  1), supervise = GRanges(), gcrange = c(0.3, 0.8), emtrace = TRUE,
+  model = c("nbinom", "poisson"), mu0 = 1, mu1 = 50, theta0 = mu0,
+  theta1 = mu1, p = 0.02, converge = 0.001, genome = "hg19",
+  gctype = c("ladder", "tricube"))
 }
 \arguments{
-\item{cov}{A list object returned by function \code{read5endCoverage}.}
+\item{coverage}{A list object returned by function \code{read5endCoverage}.}
 
 \item{bdwidth}{A non-negative integer vector with two elements 
 specifying ChIP-seq binding width and peak detection half window size.
@@ -26,24 +27,52 @@ be calculated from \code{bdwidth}. However, if customized numbers
 provided, there won't be recalucation for this parameter; instead, the
 2nd elements of \code{bdwidth} will be recalculated based on \code{flank}.}
 
-\item{samp}{A numeric specifying the proportion of regions to be
-randomized for GC effects estimation. Default is 0.05.}
-
 \item{plot}{A logical vector which, when TRUE (default), returns plots
 of intermediate results.}
+
+\item{sampling}{A numeric vector with length 2. The first number specifies
+the proportion of regions to be sampled for GC effects estimation.
+The second number specifies the repeat times for sampling.
+Default c(0.05,1) gives pretty robust estimation for human genome. However,
+smaller genomes might need both higher proportion and more repeat times for
+robust estimation.}
+
+\item{supervise}{A GRanges object specifying peak regions in the
+studied data, such as peaks called by peak callers, e.g. MACS & SPP. These
+peak regions provide supervised window sampling for both mixtures in the
+generalized linear model. Default no supervising. Or, if provided peak
+regions have too few covered windows, supervised sampling will be replaced
+by random sampling automatically.}
 
 \item{gcrange}{A non-nagative numeric vector with length 2. This vector
 set the range of GC content to filter regions. For human, most regions
 have GC content between 0.3 and 0.8, which is set as the default. Other
 regions with GC content beyond this range will be ignored.}
 
+\item{emtrace}{A logical vector which, when TRUE (default), allows to 
+print the trace of log likelihood changes in EM iterations.}
+
+\item{model}{A character specifying the distribution model to be used in
+generalized linear model fitting. The default is negative
+binomial(\code{nbinom}), while \code{poisson} is also supported currently.
+Based on our tests of multiple datasets, mostly poisson is a very good
+approximation of negative binomial, and provides much faster model fitting.}
+
 \item{mu0}{A non-negative numeric initiating read count signals for
-background regions. This is treated as a starting value for EM algorithm.
-Default is 1.}
+background regions. This is treated as the starting value of background mean
+for poisson/nbinom fitting. Default is 1.}
 
 \item{mu1}{A non-negative numeric initiating read count signals for
-foreground regions. This is treated as a starting value for EM algorithm.
-Default is 50.}
+foreground regions. This is treated as the starting value of foreground mean
+for poisson/nbinom fitting, Default is 50.}
+
+\item{theta0}{A non-negative numeric initiating the shape parameter of
+negative binomial model for background regions. For more detail, see
+theta in \code{\link[MASS]{glm.nb}} function.}
+
+\item{theta1}{A non-negative numeric initiating the shape parameter of
+negative binomial model for foreground regions. For more detail, see
+theta in \code{\link[MASS]{glm.nb}} function.}
 
 \item{p}{A non-negative numeric specifying the proportion of foreground
 regions in all estimated regions. This is treated as a starting value for
@@ -54,9 +83,6 @@ algorithm termination. EM algorithm stops when the ratio of log likelihood
 increment to whole log likelihood is less or equivalent to 
 \code{converge}.}
 
-\item{emtrace}{A logical vector which, when TRUE (default), allows to 
-print the trace of log likelihood changes in EM iterations.}
-
 \item{genome}{A \link[BSgenome]{BSgenome} object containing the sequences
 of the reference genome that was used to align the reads, or the name of
 this reference genome specified in a way that is accepted by the
@@ -65,32 +91,33 @@ software package. In that case the corresponding BSgenome data package
 needs to be already installed (see \code{?\link[BSgenome]{getBSgenome}} in
 the \pkg{BSgenome} package for the details).}
 
-\item{method}{A character vector specifying choice of method to calculate
-effective GC content. Default is based on uniformed fragment distribution.
-A more smoother method based on tricube assumption is also allowed. 
-However, tricube should be not used if estimated peak half size is 3 times 
-or more larger than estimated bind width.}
+\item{gctype}{A character vector specifying choice of method to calculate
+effective GC content. Default \code{ladder} is based on uniformed fragment
+distribution. A more smoother method based on tricube assumption is also
+allowed. However, tricube should be not used if estimated peak half size
+is 3 times or more larger than estimated bind width.}
 }
 \value{
 A list of objects
-\item{glm0}{Estimated generalized linear model for background GC effects.}
-\item{glm1}{Estimated generalized linear model for foreground GC effects.}
-\item{mu0}{Predicted signals by GC content if belongs to background.}
-\item{mu1}{Predicted signals by GC content if belongs to foreground.}
-\item{z}{Estimated probabilty of being foreground for input windows.}
-\item{p}{Estimated proportion of foreground regions.}
-\item{ll}{Converged log likelihood.}
+\item{gc}{The GC contents at which GC effects are estimated.}
+\item{mu0}{Predicted background signals at GC content \code{gc}.}
+\item{mu1}{Predicted foreground signals at GC content \code{gc} .}
+\item{mu0med0}{Median of predicted background signals.}
+\item{mu1med1}{Median of predicted foreground signals.}
+\item{mu0med1}{Median of predicted background signals at GC content of
+foreground windows.}
+\item{mu1med0}{Median of predicted foreground signals at GC content of
+background windows.}
 }
 \description{
 GC effects are estimated based on effective GC content and reads count
 on genome-wide windows, using generalized linear mixture models. Genome
-wide windows are randomly sampled with given proportions. GC effects of
-background and foreground are estimated separately, while effects on
-background level act more likely to be the real bias.
+wide windows are randomly or supervised sampled with given proportions.
+GC effects of background and foreground are estimated separately.
 }
 \examples{
 bam <- system.file("extdata", "chipseq.bam", package="gcapc")
 cov <- read5endCoverage(bam)
 bdw <- bindWidth(cov)
-gcb <- gcEffects(cov, bdw, samp = 0.15)
+gcb <- gcEffects(cov, bdw, sampling = c(0.15,1))
 }

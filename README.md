@@ -5,47 +5,52 @@ ChIP-seq has been widely utilized as the standard technology to detect
 protein binding regions, where peak calling algorithms were developed 
 particularly to serve the analysis. Existing peak callers lack of power 
 on ranking peaks' significance due to sequencing technology might undergo
-sequence context biases, *e.g.* GC bias. **gcapc** is designed to address 
+sequence context biases, *e.g.* GC bias. *gcapc* is designed to address 
 this deficiency by modeling GC effects into peak calling.
 
 ### Installation
 
-**gcapc** is an R-package. It can be installed into R by following code
-using the GitHub source here.
-```s
-source("https://bioconductor.org/biocLite.R")
-biocLite(c("BiocGenerics","GenomeInfoDb","S4Vectors","IRanges","Biostrings",
-	"BSgenome","GenomicRanges","Rsamtools","GenomicAlignments","splines"))
+*gcapc* is an R/Bioconductor package, which can be installed with source
+code documented in [GitHub](https://github.com/tengmx/gcapc) or simply
+through [Bioconductor](https://bioconductor.org/packages/gcapc).
 
+If GitHub source installation is selected, make sure dependency
+R packages are pre-installed, including BiocGenerics, GenomeInfoDb,
+S4Vectors, IRanges, Biostrings, BSgenome, GenomicRanges, Rsamtools,
+GenomicAlignments as shown in the
+[DESCRIPTION](https://github.com/tengmx/gcapc/blob/master/DESCRIPTION) file.
+Then, install *gcapc* with following code.
+```s
 library(devtools)
 install_github("tengmx/gcapc")
 ```
 
-Alternatively, it can be installed through Bioconductor by following code.
+Alternatively, installation through Bioconductor is as simple as follows.
 ```s
 source("https://bioconductor.org/biocLite.R")
 biocLite("gcapc")
 ```
 
-After installation, the package can be loaded into R.
+### Using *gcapc*
 
+First, load the package into R.
 ```s
 library(gcapc)
 ```
 
-### Using gcapc
+Then, follow the steps introduced in the package 
+[vignette](https://www.bioconductor.org/packages/release/bioc/vignettes/gcapc/inst/doc/gcapc.html)
+to estimate GC-bias or peak calling.
 
-Details of using this package, please see the 
-[vignette](https://bioconductor.org/packages/devel/bioc/vignettes/gcapc/inst/doc/gcapc.html).
+### Help
+
+You are very welcome to leave any questions/bug messages at
+[GitHub issues](https://github.com/tengmx/gcapc/issues).
 
 #### Note:
 
-1. This package is currently only available in the development verion of
-Bioconductor, and will be added into release version in April 2017. Thus,
-develop version of Bioconductor is required for installation through
-Bioconductor repository. 
-2. For the purpose of synchronization between GitHub
-and Bioconductor, development version of R is required if installing through
-GitHub. Or, manually change required version number of R in the DESCRIPTION
-file and install package locally if preferring working on release version of
-R.
+1. This repository is synchronized with the release version 
+of *gcapc* in Bioconductor.
+2. If your local R is lower than the required as shown in
+[DESCRIPTION](https://github.com/tengmx/gcapc/blob/master/DESCRIPTION)
+file, please update R before installation.
