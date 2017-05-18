@@ -227,7 +227,8 @@ refineSites <- function(counts,sites,flank=250L,
         fitz[idx[outputidx],rep] <- z[outputidx[idx]]
         cat("......... Sample",rep,"finished\n")
     }
-    gce <- log2(t(t(fitmu1)/colMedians(fitmu1[fitz>=0.5],na.rm=T))) * fitz +
-           log2(t(t(fitmu0)/colMedians(fitmu0[fitz>=0.5],na.rm=T))) * (1-fitz)
+    gce <- log2(t(t(fitmu1)/colMedians(fitmu1[fitz>=0.5],na.rm=TRUE))) * fitz +
+           log2(t(t(fitmu0)/colMedians(fitmu0[fitz>=0.5],
+                                       na.rm=TRUE))) * (1-fitz)
     counts[outputidx,] / 2^gce
 }
