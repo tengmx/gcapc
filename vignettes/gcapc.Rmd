@@ -217,6 +217,13 @@ significances are pretty similar in above figure since both are obtained by
 considering GC effects. In practice, if the old one were obtained from other
 peak callers, there should be big changes between the old and new. 
 
+# Refine Count Table
+
+In this package, function *refineSites* is provided in case that some are more
+interested in correcting existing sites instead of calling peaks. We used this
+function to adjust ENCODE reported sites in our paper [@teng]. For detail of
+using this function, please read the function manual page.
+
 # Summary
 
 In this vignette, we went through main functions in this package, and

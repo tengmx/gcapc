@@ -1,6 +1,6 @@
 Package: gcapc
 Title: GC Aware Peak Caller
-Version: 1.0.2
+Version: 1.0.4
 Author: Mingxiang Teng and Rafael A. Irizarry
 Maintainer: Mingxiang Teng <tengmx@gmail.com>
 Description: Peak calling for ChIP-seq data with
@@ -9,7 +9,7 @@ Description: Peak calling for ChIP-seq data with
     linear mixture models using effective GC strategy,
     then applied into peak significance estimation.
 Depends:
-    R (>= 3.4)
+    R (>= 3.3)
 Imports:
     BiocGenerics,
     GenomeInfoDb,
@@ -20,6 +20,7 @@ Imports:
     GenomicRanges,
     Rsamtools,
     GenomicAlignments,
+    matrixStats,
     MASS,
     splines,
     grDevices,
