@@ -3,11 +3,10 @@
 #' @description
 #' GC effects are estimated based on effective GC content and reads count
 #' on genome-wide windows, using generalized linear mixture models. Genome
-#' wide windows are randomly sampled with given proportions. GC effects of
-#' background and foreground are estimated separately, while effects on
-#' background level act more likely to be the real bias.
+#' wide windows are randomly or supervised sampled with given proportions.
+#' GC effects of background and foreground are estimated separately.
 #'
-#' @param cov A list object returned by function \code{read5endCoverage}.
+#' @param coverage A list object returned by function \code{read5endCoverage}.
 #'
 #' @param bdwidth A non-negative integer vector with two elements 
 #' specifying ChIP-seq binding width and peak detection half window size.
@@ -23,25 +22,53 @@
 #' provided, there won't be recalucation for this parameter; instead, the
 #' 2nd elements of \code{bdwidth} will be recalculated based on \code{flank}.
 #'
-#' @param samp A numeric specifying the proportion of regions to be
-#' randomized for GC effects estimation. Default is 0.05.
-#' 
 #' @param plot A logical vector which, when TRUE (default), returns plots
 #' of intermediate results.
+#'
+#' @param sampling A numeric vector with length 2. The first number specifies
+#' the proportion of regions to be sampled for GC effects estimation.
+#' The second number specifies the repeat times for sampling.
+#' Default c(0.05,1) gives pretty robust estimation for human genome. However,
+#' smaller genomes might need both higher proportion and more repeat times for
+#' robust estimation.
+#'
+#' @param supervise A GRanges object specifying peak regions in the
+#' studied data, such as peaks called by peak callers, e.g. MACS & SPP. These
+#' peak regions provide supervised window sampling for both mixtures in the
+#' generalized linear model. Default no supervising. Or, if provided peak
+#' regions have too few covered windows, supervised sampling will be replaced
+#' by random sampling automatically.
 #' 
 #' @param gcrange A non-nagative numeric vector with length 2. This vector
 #' set the range of GC content to filter regions. For human, most regions
 #' have GC content between 0.3 and 0.8, which is set as the default. Other
 #' regions with GC content beyond this range will be ignored.
 #'
+#' @param emtrace A logical vector which, when TRUE (default), allows to 
+#' print the trace of log likelihood changes in EM iterations.
+#'
+#' @param model A character specifying the distribution model to be used in
+#' generalized linear model fitting. The default is negative
+#' binomial(\code{nbinom}), while \code{poisson} is also supported currently.
+#' Based on our tests of multiple datasets, mostly poisson is a very good
+#' approximation of negative binomial, and provides much faster model fitting. 
+#' 
 #' @param mu0 A non-negative numeric initiating read count signals for
-#' background regions. This is treated as a starting value for EM algorithm.
-#' Default is 1.
+#' background regions. This is treated as the starting value of background mean
+#' for poisson/nbinom fitting. Default is 1.
 #'
 #' @param mu1 A non-negative numeric initiating read count signals for
-#' foreground regions. This is treated as a starting value for EM algorithm.
-#' Default is 50.
+#' foreground regions. This is treated as the starting value of foreground mean
+#' for poisson/nbinom fitting, Default is 50.
 #'
+#' @param theta0 A non-negative numeric initiating the shape parameter of
+#' negative binomial model for background regions. For more detail, see
+#' theta in \code{\link[MASS]{glm.nb}} function.
+#'
+#' @param theta1 A non-negative numeric initiating the shape parameter of
+#' negative binomial model for foreground regions. For more detail, see
+#' theta in \code{\link[MASS]{glm.nb}} function.
+#' 
 #' @param p A non-negative numeric specifying the proportion of foreground
 #' regions in all estimated regions. This is treated as a starting value for
 #' EM algorithm. Default is 0.02.
@@ -51,9 +78,6 @@
 #' increment to whole log likelihood is less or equivalent to 
 #' \code{converge}.
 #'
-#' @param emtrace A logical vector which, when TRUE (default), allows to 
-#' print the trace of log likelihood changes in EM iterations.
-#'
 #' @param genome A \link[BSgenome]{BSgenome} object containing the sequences
 #' of the reference genome that was used to align the reads, or the name of
 #' this reference genome specified in a way that is accepted by the
@@ -62,25 +86,28 @@
 #' needs to be already installed (see \code{?\link[BSgenome]{getBSgenome}} in
 #' the \pkg{BSgenome} package for the details).
 #' 
-#' @param method A character vector specifying choice of method to calculate
-#' effective GC content. Default is based on uniformed fragment distribution.
-#' A more smoother method based on tricube assumption is also allowed. 
-#' However, tricube should be not used if estimated peak half size is 3 times 
-#' or more larger than estimated bind width.
+#' @param gctype A character vector specifying choice of method to calculate
+#' effective GC content. Default \code{ladder} is based on uniformed fragment
+#' distribution. A more smoother method based on tricube assumption is also
+#' allowed. However, tricube should be not used if estimated peak half size
+#' is 3 times or more larger than estimated bind width.
 #'
 #' @return A list of objects
-#' \item{glm0}{Estimated generalized linear model for background GC effects.}
-#' \item{glm1}{Estimated generalized linear model for foreground GC effects.}
-#' \item{mu0}{Predicted signals by GC content if belongs to background.}
-#' \item{mu1}{Predicted signals by GC content if belongs to foreground.}
-#' \item{z}{Estimated probabilty of being foreground for input windows.}
-#' \item{p}{Estimated proportion of foreground regions.}
-#' \item{ll}{Converged log likelihood.}
+#' \item{gc}{The GC contents at which GC effects are estimated.}
+#' \item{mu0}{Predicted background signals at GC content \code{gc}.}
+#' \item{mu1}{Predicted foreground signals at GC content \code{gc} .}
+#' \item{mu0med0}{Median of predicted background signals.}
+#' \item{mu1med1}{Median of predicted foreground signals.}
+#' \item{mu0med1}{Median of predicted background signals at GC content of
+#' foreground windows.}
+#' \item{mu1med0}{Median of predicted foreground signals at GC content of
+#' background windows.} 
 #'
 #' @import S4Vectors
 #' @import IRanges
 #' @import GenomicRanges
 #' @import Biostrings
+#' @import MASS
 #' @importFrom BSgenome getBSgenome
 #' @importFrom BSgenome getSeq
 #' @importFrom splines ns
@@ -90,6 +117,7 @@
 #' @importFrom graphics axis
 #' @importFrom graphics lines
 #' @importFrom stats dpois
+#' @importFrom stats dnbinom
 #' @importFrom stats glm
 #' @importFrom stats predict
 #'
@@ -98,65 +126,106 @@
 #' bam <- system.file("extdata", "chipseq.bam", package="gcapc")
 #' cov <- read5endCoverage(bam)
 #' bdw <- bindWidth(cov)
-#' gcb <- gcEffects(cov, bdw, samp = 0.15)
+#' gcb <- gcEffects(cov, bdw, sampling = c(0.15,1))
 
-gcEffects <- function(cov,bdwidth,flank=NULL,samp=0.05,plot=TRUE,
-                      gcrange=c(0.3,0.8),mu0=1,mu1=50,p=0.02,converge=1e-3,
-                      emtrace=TRUE,genome="hg19",
-                      method=c("default","tricube")){
+gcEffects <- function(coverage,bdwidth,flank=NULL,plot=TRUE,
+                      sampling=c(0.05,1),supervise=GRanges(),
+                      gcrange=c(0.3,0.8),emtrace=TRUE,
+                      model=c('nbinom','poisson'),
+                      mu0=1,mu1=50,theta0=mu0,theta1=mu1,
+                      p=0.02,converge=1e-3,
+                      genome="hg19",gctype=c("ladder","tricube")){
+    ### input sanity check
     genome <- getBSgenome(genome)
-    mthd <- match.arg(method)
+    model <- match.arg(model)
+    gctype <- match.arg(gctype)
     bdw <- bdwidth[1]
     halfbdw <- floor(bdw/2)
+    if((length(bdwidth)<2 & is.null(flank)) ||
+       (!is.null(flank) & length(bdwidth)<1))
+        stop("Parameter 'bdwidth' or 'flank' error.\n")
     if(is.null(flank)){
         pdwh <- bdwidth[2]
         flank <- pdwh-bdw+halfbdw
     }else{
         pdwh <- flank+bdw-halfbdw
     }
-    ### regions and reads count
-    cat("Starting to estimate GC effects.\n")
-    cat("...... Sampling regions\n")
-    seqs <- sapply(cov$fwd,length)
-    seqs <- floor(seqs/bdw-2)*bdw
-    starts <- lapply(seqs, function(i) seq(1+bdw*2, i, bdw))
-    ends <- lapply(seqs, function(i) seq(bdw*3, i, bdw))
-    chrs <- rep(names(seqs), times=sapply(starts, length))
-    sampidx <- sort(sample.int(length(chrs),ceiling(length(chrs)*samp)))
-    region <- GRanges(chrs[sampidx], IRanges(start=unlist(starts)[sampidx],
-                  end=unlist(ends)[sampidx]))
-    rm(seqs,starts,ends,chrs,sampidx)
-    cat("......... Estimating using",length(region),"regions\n")
-    regionsp <- resize(split(region,seqnames(region)),pdwh)
-    cat("...... Counting reads\n")
-    rcfwd <- unlist(viewSums(Views(cov$fwd,
-                 ranges(shift(regionsp,-flank)))))
-    rcrev <- unlist(viewSums(Views(cov$rev,
-                 ranges(shift(regionsp,halfbdw)))))
-    if(plot){
-        layout(matrix(1:2,1,2))
-        idxx <- sample.int(length(region),min(50000,length(region)))
-        plot(rcfwd[idxx],rcrev[idxx],
-            main=paste('RC: shifted',halfbdw,"; CORR:",
-            round(cor(rcfwd,rcrev),3),"; Flank:",flank),
-            ylab='Reverse strand',xlab='Forward strand')
-        rm(idxx)
-    }
-    rm(regionsp)
-    ### effective gc content
-    cat("...... Calculating GC content with flanking",flank,"\n")
-    rwidth <- width(region[1])
-    nr <- shift(resize(region,rwidth + flank*2),-flank)
-    seqs <- getSeq(genome,nr)
-    gcpos <- startIndex(vmatchPattern("S", seqs, fixed="subject"))
-    if(mthd=="default"){
+    if(length(sampling)<2 || sampling[1]<=0 || sampling[1]>1 || sampling[2]<1)
+        stop("Parameter 'sampling' error.\n")
+    sampling[2] <- floor(sampling[2])
+    if(class(supervise)!="GRanges")
+        stop("Parameter 'supervise' error.\n")
+    if(sum(gcrange<0)>0 || sum(gcrange>1)>0 || sum(is.na(gcrange))>0)
+        stop("Parameter 'gcrange' error.\n")
+    if(mu0<=0 || mu1<=0 || mu0>=mu1)
+        stop("Parameter 'mu0' or 'mu1' error.\n")
+    if(model=='nbinom' && (theta1<=0 || theta0<=0))
+        stop("Parameter 'theta0' or 'theta1' error in nbinom model.\n")
+    if(p<=0 || p>=0.5)
+        stop("'p' must be in (0,0.5).\n")
+    if(converge<=0 || converge>0.1)
+        stop("'converge' must be in (0,0.1].\n")
+    if(gctype=="ladder"){
         weight <- c(seq_len(flank),rep(flank+1,bdw),rev(seq_len(flank)))
         weight <- weight/sum(weight)
-    }else if(mthd=="tricube"){
+    }else if(gctype=="tricube"){
         w <- flank+halfbdw
         weight <- (1-abs(seq(-w,w)/w)^3)^3
         weight <- weight/sum(weight)
     }
+    ### regions
+    cat("Starting to estimate GC effects\n")
+    seqs <- sapply(coverage$fwd,length)
+    seqs <- floor(seqs/bdw-10)*bdw
+    binl <- sapply(seqs, function(i) length(seq(1+bdw*10, i, bdw)))
+    starts <- unlist(lapply(seqs, function(i) seq(1+bdw*10, i, bdw)))
+    ends <- unlist(lapply(seqs, function(i) seq(bdw*11, i, bdw)))
+    chrs <- rep(names(seqs), times=binl)
+    region <- GRanges(chrs,IRanges(start=starts,end=ends))
+    rm(seqs,binl,starts,ends,chrs)
+    ###  sampling and counts
+    fo <- unique(subjectHits(findOverlaps(supervise,region)))
+    if(length(fo)<1000 || length(region)-length(fo) <1000){
+        cat("...... Too few/much ranges in 'supervise'.",
+            "Selecting random sampling\n")
+        sampidx <- sort(as.integer(sapply(seq_len(sampling[2]),function(x)
+               sample.int(length(region),floor(length(region)*sampling[1])))))
+        samptype <- 'random'
+
+    }else{
+        cat("...... Selecting supervised sampling\n")
+        num1 <- floor(length(fo) * sampling[1])
+        num2 <- floor((length(region)-length(fo)) * sampling[1])
+        sampidx <- sort(as.integer(sapply(seq_len(sampling[2]),
+                   function(x) c(sample(fo,num1),
+                   sample(setdiff(seq_along(region),fo),num2)))))
+        samptype <- 'supervised'
+    }
+    region <- region[sampidx]
+    cat("......... Sampling",sampling[1]*100,"percent of regions by",
+        sampling[2], "times, total",length(region),"regions\n")
+    regionsp <- resize(split(region,seqnames(region)),pdwh)
+    cat("...... Counting reads\n")
+    rcfwd <- unlist(viewSums(Views(coverage$fwd,
+                                   ranges(shift(regionsp,-flank)))))
+    rcrev <- unlist(viewSums(Views(coverage$rev,
+                                   ranges(shift(regionsp,halfbdw)))))
+    rm(regionsp,sampidx,fo)
+    if(plot){
+        layout(matrix(1:2,1,2))
+        idxx <- sample.int(length(region),min(50000,length(region)))
+        plot(rcfwd[idxx],rcrev[idxx],
+             main=paste('RC: shifted',halfbdw,"; CORR:",
+                 round(cor(rcfwd,rcrev),3),"; Flank:",flank),
+             ylab='Reverse strand',xlab='Forward strand')
+        rm(idxx)
+    }
+    ### effective gc content
+    cat("...... Calculating GC content with flanking",flank,"\n")
+    rwidth <- width(region[1])
+    nr <- shift(resize(region,rwidth + flank*2),-flank)
+    seqs <- getSeq(genome,nr) # slow
+    gcpos <- startIndex(vmatchPattern("S", seqs, fixed="subject"))
     gc <- round(sapply(gcpos,function(x) sum(weight[x])),3)
     rm(rwidth,nr,seqs,gcpos,region)
     ### em algorithms
@@ -164,25 +233,41 @@ gcEffects <- function(cov,bdwidth,flank=NULL,samp=0.05,plot=TRUE,
     gc <- rep(gc,2)
     rc <- c(rcfwd,rcrev)
     idx <- gc>=gcrange[1] & gc<=gcrange[2] & !is.na(rc) & !is.na(gc)
-    y <- rc[idx]
-    gc <- gc[idx]
-    logp1 <- dpois(y, lambda = mu1, log = TRUE)
-    logp0 <- dpois(y, lambda = mu0, log = TRUE)
+    dat <- data.frame(y=rc[idx],gc=gc[idx])
+    if(model=='poisson'){
+        logp1 <- dpois(dat$y, lambda = mu1, log = TRUE)
+        logp0 <- dpois(dat$y, lambda = mu0, log = TRUE)
+    }else{
+        logp1 <- dnbinom(dat$y, size=theta1, mu=mu1, log = TRUE)
+        logp0 <- dnbinom(dat$y, size=theta0, mu=mu0, log = TRUE)
+    }
     z <- 1/(1+exp(logp0-logp1)*(1-p)/p)
     llf <- sum(z*(logp1+log(p)) + (1-z)*(logp0+log(1-p)))
     llgap <- llf
     i <- 0
+    rm(rcfwd,rcrev,rc,gc,idx)
     while(abs(llgap) > (abs(llf) * converge) && i < 100){
         p <- (2+sum(z))/(2*2+length(z))
-        dat <- data.frame(y=y,gc=gc)
         dat1 <- dat[z>=0.5,]
         dat0 <- dat[z<0.5,]
-        lmns0 <- glm(y ~ ns(gc, df = 2), data=dat0, family="poisson")
-        lmns1 <- glm(y ~ ns(gc, df = 2), data=dat1, family="poisson")
-        predY0 <- predict(lmns0, data.frame(gc = gc),type="response")
-        predY1 <- predict(lmns1, data.frame(gc = gc),type="response")
-        logp1 <- dpois(y, lambda = predY1, log = TRUE)
-        logp0 <- dpois(y, lambda = predY0, log = TRUE)
+        if(model=='poisson'){
+            lmns0 <- glm(y ~ ns(gc, df = 2), data=dat0, family="poisson")
+            lmns1 <- glm(y ~ ns(gc, df = 2), data=dat1, family="poisson")
+            predY0 <- predict(lmns0, data.frame(gc = dat$gc),type="response")
+            predY1 <- predict(lmns1, data.frame(gc = dat$gc),type="response")
+            logp1 <- dpois(dat$y, lambda = predY1, log = TRUE)
+            logp0 <- dpois(dat$y, lambda = predY0, log = TRUE)
+        }else{
+            # slow
+            lmns0 <- glm.nb(y ~ ns(gc, df = 2), data=dat0, init.theta=theta0)
+            lmns1 <- glm.nb(y ~ ns(gc, df = 2), data=dat1, init.theta=theta1)
+            predY0 <- predict(lmns0, data.frame(gc = dat$gc),type="response")
+            predY1 <- predict(lmns1, data.frame(gc = dat$gc),type="response")
+            theta1 <- lmns1$theta
+            theta0 <- lmns0$theta
+            logp1 <- dnbinom(dat$y, size=theta1, mu=predY1, log = TRUE)
+            logp0 <- dnbinom(dat$y, size=theta0, mu=predY0, log = TRUE)
+        }
         z <- 1/(1+exp(logp0-logp1)*(1-p)/p)
         if(sum(z>=0.5) < length(gc)*0.0005 | sum(z<0.5) < length(gc)*0.0005)
             break;
@@ -194,20 +279,26 @@ gcEffects <- function(cov,bdwidth,flank=NULL,samp=0.05,plot=TRUE,
             cat("......... Iteration",i,'\tll',llf,'\tincrement',llgap,'\n')
     }
     ### gc effects
-    gcbias <- list(glm0=lmns0,glm1=lmns1,
-                  mu0=predY0,mu1=predY1,z=z,p=p,ll=llf)
+    gcbase <- round(seq(0,1,0.001),3)
+    gcbias <- list(gc=gcbase,
+                   mu0=predict(lmns0,data.frame(gc = gcbase),type="response"),
+                   mu1=predict(lmns1,data.frame(gc = gcbase),type="response"),
+                   mu0med0=median(predY0[z<0.5]),
+                   mu1med1=median(predY1[z>=0.5]),
+                   mu0med1=median(predY0[z>=0.5]),
+                   mu1med0=median(predY1[z<0.5]))
     if(plot){
-        tmp <- sum(idx)
+        tmp <- nrow(dat)
         idx0 <- sample.int(tmp,min(100000,tmp))
         rbPal <- colorRampPalette(c('green','orange'))
-        color <- rbPal(20)[as.numeric(cut(gcbias$z[idx0],breaks = 20))]
-        plot(gc[idx0],rc[idx][idx0]+0.5,col=color,xlim=gcrange,
-            pch=20,main="GC Effects",
-            xlab='Effective GC content',ylab="Read counts",log='y',yaxt='n')
+        color <- rbPal(20)[as.numeric(cut(z[idx0],breaks = 20))]
+        plot(dat$gc[idx0],dat$y[idx0]+0.5,col=color,xlim=gcrange,pch=20,
+             main=paste(model,samptype),
+             xlab='Effective GC content',ylab="Read counts",log='y',yaxt='n')
         idx00 <- sample.int(tmp,min(5000,tmp))
-        idx00 <- idx00[order(gc[idx00])]
-        lines(gc[idx00],gcbias$mu1[idx00]+0.5,col='red',lwd=3)
-        lines(gc[idx00],gcbias$mu0[idx00]+0.5,col='blue',lwd=3)
+        idx00 <- idx00[order(dat$gc[idx00])]
+        lines(dat$gc[idx00],predY1[idx00]+0.5,col='red',lwd=3)
+        lines(dat$gc[idx00],predY0[idx00]+0.5,col='blue',lwd=3)
         axis(side=2, at=c(0,2^(0:10))+0.5, labels=c(0,2^(0:10)))
     }
     gcbias

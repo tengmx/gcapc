@@ -8,7 +8,7 @@
 #' DNA-protein complexes, and denoted that as ChIP-seq binding width.Also,
 #' the peak detection window half size is estimated based on binding width.
 #'
-#' @param cov A list object returned by function \code{read5endCoverage}.
+#' @param coverage A list object returned by function \code{read5endCoverage}.
 #'
 #' @param range A non-nagative integer vector with length 2. This vector
 #' set the range within which binding width and peak window size are 
@@ -36,19 +36,19 @@
 #' cov <- read5endCoverage(bam)
 #' bindWidth(cov)
 
-bindWidth <- function(cov,range=c(50L,500L),step=50L,odd=TRUE){
+bindWidth <- function(coverage,range=c(50L,500L),step=50L,odd=TRUE){
     cat("Starting to estimate bdwidth.\n")
-    if(!is.list(cov) || length(cov)!=2)
-        stop("bdwidth: cov is not a list of 2 elements\n")
-    if(sum(names(cov) %in% c("fwd","rev"))!=2)
-        stop("bdwidth: names of cov is not correct\n")
-    if(length(cov$fwd)!=length(cov$rev))
+    if(!is.list(coverage) || length(coverage)!=2)
+        stop("bdwidth: coverage is not a list of 2 elements\n")
+    if(sum(names(coverage) %in% c("fwd","rev"))!=2)
+        stop("bdwidth: names of coverage is not correct\n")
+    if(length(coverage$fwd)!=length(coverage$rev))
         stop("bdwidth: chroms differ between fwd and rev strands\n")
     if(step<1) stop("bdwidth: step must be at least 1")
     step <- round(step)
     ## cross correlation estimation
-    readsum <- sapply(cov$fwd,sum) + sapply(cov$rev,sum)
-    chromlen <- sapply(cov$fwd,length)
+    readsum <- sapply(coverage$fwd,sum) + sapply(coverage$rev,sum)
+    chromlen <- sapply(coverage$fwd,length)
     cycle <- 1
     rangein <- range
     w2 <- 0
@@ -56,14 +56,14 @@ bindWidth <- function(cov,range=c(50L,500L),step=50L,odd=TRUE){
     repeat{
         cat("...... Cycle",cycle,"for bind width estimation\n")
         regionpos <- regionneg <- IRangesList()
-        for(i in seq_along(cov$fwd)){
+        for(i in seq_along(coverage$fwd)){
             regionpos[[i]] <- IRanges(start=rep(1,length(shifts)),
                               end=chromlen[i]-shifts)
             regionneg[[i]] <- IRanges(start=shifts+1,
                               end=rep(chromlen[i],length(shifts)))
         }
-        viewpos <- Views(cov$fwd,regionpos)
-        viewneg <- Views(cov$rev,regionneg)
+        viewpos <- Views(coverage$fwd,regionpos)
+        viewneg <- Views(coverage$rev,regionneg)
         cors <- sapply(seq_along(viewpos),function(i)
                     cor(viewpos[[i]],viewneg[[i]]))
         corsall <- colSums(t(cors) * readsum / sum(readsum))
@@ -93,7 +93,7 @@ bindWidth <- function(cov,range=c(50L,500L),step=50L,odd=TRUE){
     ### refine of peak window half size by region correlation
     cat("Refining peak window half size by region from two strands\n")
     halfbdw <- floor(w1/2)
-    seqs <- sapply(cov$fwd,length)
+    seqs <- sapply(coverage$fwd,length)
     seqs <- floor(seqs/w1-2)*w1
     starts <- lapply(seqs, function(i) seq(1+w1*2, i, w1))
     ends <- lapply(seqs, function(i) seq(w1*3, i, w1))
@@ -107,9 +107,9 @@ bindWidth <- function(cov,range=c(50L,500L),step=50L,odd=TRUE){
     for(pdwh in pdwhs){
       flank <- pdwh-w1+halfbdw
       regionsp <- resize(split(region,seqnames(region)),pdwh)
-      rcfwd <- unlist(viewSums(Views(cov$fwd,
+      rcfwd <- unlist(viewSums(Views(coverage$fwd,
                    ranges(shift(regionsp,-flank)))))
-      rcrev <- unlist(viewSums(Views(cov$rev,
+      rcrev <- unlist(viewSums(Views(coverage$rev,
                    ranges(shift(regionsp,halfbdw)))))
       corr <- c(corr,cor(rcfwd,rcrev))
       cat('.')

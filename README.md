@@ -39,7 +39,7 @@ library(gcapc)
 ```
 
 Then, follow the steps introduced in the package 
-[vignette](https://bioconductor.org/packages/devel/bioc/vignettes/gcapc/inst/doc/gcapc.html)
+[vignette](https://www.bioconductor.org/packages/release/bioc/vignettes/gcapc/inst/doc/gcapc.html)
 to estimate GC-bias or peak calling.
 
 ### Help
@@ -49,7 +49,7 @@ You are very welcome to leave any questions/bug messages at
 
 #### Note:
 
-1. This repository is synchronized with the devel version 
+1. This repository is synchronized with the release version 
 of *gcapc* in Bioconductor.
 2. If your local R is lower than the required as shown in
 [DESCRIPTION](https://github.com/tengmx/gcapc/blob/master/DESCRIPTION)

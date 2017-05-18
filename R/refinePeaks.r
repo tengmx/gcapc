@@ -1,10 +1,9 @@
-#' @title GC Effects Aware Peak Calling
+#' @title Refine Peaks with GC Effects
 #'
 #' @description
-#' This function calls ChIP-seq peaks using potential GC effects information.
-#' Enrichment scores are calculated on sliding windows of prefiltered
-#' large regions, with GC effects considered. Permutation analysis is
-#' used to determine significant binding peaks.
+#' This function refines the ranks (i.e. significance/pvalue) of
+#' pre-determined peaks by potential GC effects. These peaks can be
+#' obtained from other peak callers, e.g. MACS or SPP.
 #'
 #' @param coverage A list object returned by function \code{read5endCoverage}.
 #'
@@ -16,6 +15,11 @@
 #' bdwidth results no meaning of downstream analysis. The values
 #' need to be the same as it is when calculating \code{gcbias}. 
 #'
+#' @param peaks A GRanges object specifying the peaks to be refined.
+#' A flexible set of peaks are preferred, meaning both significant
+#' (e.g. p<=0.05) and non-significant (e.g. p>0.05) peaks should be
+#' included. A reasonable peak set are those with p less than 0.5.
+#' 
 #' @param flank A non-negative integer specifying the flanking width of
 #' ChIP-seq binding. This parameter provides the flexibility that reads
 #' appear in flankings by decreased probabilities as increased distance
@@ -26,20 +30,9 @@
 #' 2nd elements of \code{bdwidth} will be recalculated based on \code{flank}.
 #' The value needs to be the same as it is when calculating \code{gcbias}.
 #'
-#' @param prefilter A non-negative integer specifying the minimum of reads
-#' to qualify a potential binding region. Regions with total of reads from
-#' forward and reverse strands larger or equivalent to \code{prefilter} are
-#' selected for downstream analysis. Default is 4.
-#'
 #' @param permute A non-negative integer specifying times of permutation to
 #' be performed. Default is 5. When whole large genome is used, such as
 #' human genome, 5 times of permutation could be enough.
-#'
-#' @param pv A numeric specifying p-value cutoff for significant
-#' binding peaks. Default is 0.05.
-#'
-#' @param plot A logical vector which, when TRUE (default), returns density
-#' plots of real and permutation enrichment scores.
 #'
 #' @param genome A \link[BSgenome]{BSgenome} object containing the sequences
 #' of the reference genome that was used to align the reads, or the name of
@@ -57,9 +50,10 @@
 #' is 3 times or more larger than estimated bind width. The value
 #' needs to be the same as it is when calculating \code{gcbias}.
 #'
-#' @return A GRanges of peaks with meta columns:
-#' \item{es}{Estimated enrichment score.}
-#' \item{pv}{p-value.}
+#' @return A GRanges object the same as \code{peaks} with two additional
+#' meta columns:
+#' \item{newes}{Refined enrichment scores.}
+#' \item{newpv}{Refined pvalues.}
 #'
 #' @import S4Vectors
 #' @import IRanges
@@ -67,11 +61,6 @@
 #' @import Biostrings
 #' @importFrom BSgenome getBSgenome
 #' @importFrom BSgenome getSeq
-#' @importFrom stats density
-#' @importFrom graphics plot
-#' @importFrom graphics lines
-#' @importFrom graphics abline
-#' @importFrom graphics legend
 #' @importFrom methods as
 #'
 #' @export
@@ -80,11 +69,12 @@
 #' cov <- read5endCoverage(bam)
 #' bdw <- bindWidth(cov)
 #' gcb <- gcEffects(cov, bdw, sampling = c(0.15,1))
-#' gcapcPeaks(cov, gcb, bdw)
+#' peaks <- gcapcPeaks(cov, gcb, bdw)
+#' refinePeaks(cov, gcb, bdw, peaks)
 
-gcapcPeaks <- function(coverage,gcbias,bdwidth,flank=NULL,prefilter=4L,
-                       permute=5L,pv=0.05,plot=FALSE,genome="hg19",
-                       gctype=c("ladder","tricube")){
+refinePeaks <- function(coverage,gcbias,bdwidth,peaks,flank=NULL,
+                        permute=5L,genome="hg19",
+                        gctype=c("ladder","tricube")){
     genome <- getBSgenome(genome)
     gctype <- match.arg(gctype)
     bdw <- bdwidth[1]
@@ -103,27 +93,13 @@ gcapcPeaks <- function(coverage,gcbias,bdwidth,flank=NULL,prefilter=4L,
       weight <- (1-abs(seq(-w,w)/w)^3)^3
       weight <- weight/sum(weight)
     }
-    cat("Starting to call peaks.\n")
-    ### prefiltering regions
-    cat("...... prefiltering regions\n")
-    seqs <- sapply(coverage$fwd,length)
-    seqs <- floor(seqs/bdw-10)*bdw
-    starts <- lapply(seqs, function(i) seq(1+bdw*10, i, bdw))
-    ends <- lapply(seqs, function(i) seq(bdw*11, i, bdw))
-    chrs <- rep(names(seqs), times=sapply(starts, length))
-    region <- GRanges(chrs, IRanges(start=unlist(starts),end=unlist(ends)))
-    regionsp <- resize(split(region,seqnames(region)),pdwh)
-    rcfwd <- unlist(viewSums(Views(coverage$fwd,
-                 ranges(shift(regionsp,-flank)))))
-    rcrev <- unlist(viewSums(Views(coverage$rev,
-                 ranges(shift(regionsp,halfbdw)))))
-    regions <- region[rcfwd+rcrev >= prefilter]
-    rm(seqs,starts,ends,chrs,region,regionsp,rcfwd,rcrev)
-    ## extend both ends
-    regionsrc <- reduce(shift(resize(regions,halfbdw*6+flank*2+1),
-                              -halfbdw*2-flank))
+    cat("Starting to refine peaks.\n")
+    ### extending regions
+    cat("...... extending peaks\n")
+    regionsrc <- shift(resize(peaks,width(peaks)+halfbdw*4+flank*2+1),
+                              -halfbdw*2-flank)
+    seqlevels(regionsrc,force=TRUE) <- names(coverage$fwd)
     regionsgc <- shift(resize(regionsrc,width(regionsrc)+halfbdw*2),-halfbdw)
-    rm(regions)
     ### gc content
     cat("...... caculating GC content\n")
     nr <- shift(resize(regionsgc,width(regionsgc)+flank*2),-flank)
@@ -211,50 +187,18 @@ gcapcPeaks <- function(coverage,gcbias,bdwidth,flank=NULL,prefilter=4L,
     perm <- perm[order(as.numeric(names(perm)))]
     pvs <- 1- cumsum(perm)/sum(perm)
     perm <- Rle(as.numeric(names(perm)),perm)
-    rm(covfwdp,covrevp,start,end,regionrcspp,rcp1,rcp2,rcp3,rcp4,
-        rcfwdp,rcrevp,gcw1,gcw2,gcw3,esl,regionrcsp)
-    ### report peaks
-    cat('...... reporting peaks\n')
-    sccut <- quantile(perm,1-pv)
     minpv <- 1/length(perm)
-    cat('......... enrichment scores cut at',sccut,'\n')
-    if(plot){
-        cat('......... ploting enrichment scores\n')
-        es <- as.numeric(unlist(esrlt,use.names=FALSE))
-        perm <- as.numeric(perm)
-        plot(density(perm,bw=1),col='blue',xlab='enrichment score',
-            xlim=range(es),main=paste('es determined by pvalue',pv))
-        lines(density(es,bw=1),col='red')
-        abline(v=sccut,lty=2,col='purple')
-        legend('topright',c('real','perm'),lty=1,
-            col=c('red','blue'),bty='n')
-        rm(es)
-    }
-    rm(perm)
-    cat('......... reporting peak bumps\n')
-    esrltsl <- slice(esrlt,sccut,rangesOnly=TRUE)
-    esrltsl0 <- slice(esrlt,0,rangesOnly=TRUE)
-    esrltsle <- reduce(shift(resize(esrltsl,width(esrltsl)+halfbdw*2),
-                    -halfbdw))
-    peaksir <- intersect(esrltsl0,esrltsle)
-    peaksir <- peaksir[width(peaksir)>=halfbdw]
-    rm(esrltsl,esrltsl0,esrltsle)
-    cat('......... summarizing peak score and pvalue\n')
-    peaksir <- unlist(peaksir)
-    regionids <- as.integer(names(peaksir))
-    peaksirlst <- IRangesList(start=IntegerList(as.list(start(peaksir))),
-                      end=IntegerList(as.list(end(peaksir))))
-    peaksc <- max(esrlt[regionids][peaksirlst])
-    peaksir <- shift(peaksir,start(regionsrc)[regionids]+halfbdw+flank)
-    peaks <- GRanges(seqnames(regionsrc)[regionids],peaksir,es=peaksc)
-    peaksrd <- reduce(peaks,min.gapwidth=halfbdw,with.revmap=TRUE)
-    peaksrd$es <- sapply(peaksrd$revmap,function(i) max(peaks$es[i]))
-    peaksrd$revmap <- NULL
+    rm(covfwdp,covrevp,start,end,regionrcspp,rcp1,rcp2,rcp3,rcp4,
+        rcfwdp,rcrevp,gcw1,gcw2,gcw3,esl,regionrcsp,perm)
+    ### refine peak pvalues
+    cat('...... reporting new p-value \n')
+    newes <- max(esrlt)
     pvsn <- as.numeric(names(pvs))
-    pvsni <- sapply(peaksrd$es,function(x) sum(pvsn<=x))
+    pvsni <- sapply(newes,function(x) sum(pvsn<=x))
     pvsni[pvsni==0] <- NA
-    peaksrd$pv <- pvs[pvsni]
-    peaksrd$pv[peaksrd$es<min(pvsn)] <- 1
-    peaksrd$pv[peaksrd$pv==0] <- minpv
-    peaksrd
+    newpv <- pvs[pvsni]
+    newpv[newes<min(pvsn)] <- 1
+    newpv[newpv==0] <- minpv
+    mcols(peaks) <- data.frame(mcols(peaks),newes=newes,newpv=newpv)
+    peaks
 }

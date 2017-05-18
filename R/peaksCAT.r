@@ -49,9 +49,9 @@
 #' bam <- system.file("extdata", "chipseq.bam", package="gcapc")
 #' cov <- read5endCoverage(bam)
 #' bdw <- bindWidth(cov)
-#' gcb1 <- gcEffects(cov, bdw, samp=0.15, plot=FALSE)
+#' gcb1 <- gcEffects(cov, bdw, sampling=c(0.15,1), plot=FALSE)
 #' peaks1 <- gcapcPeaks(cov, gcb1, bdw)
-#' gcb2 <- gcEffects(cov, bdw, samp=0.2, plot=FALSE)
+#' gcb2 <- gcEffects(cov, bdw, sampling=c(0.2,1), plot=FALSE)
 #' peaks2 <- gcapcPeaks(cov, gcb2, bdw)
 #' peaksCAT(peaks1, peaks2, ranks=seq(100,200,5), ylim=c(0,1))
 
@@ -59,8 +59,10 @@ peaksCAT <- function(x,y,ranks=seq(200,min(length(x),length(y),20000),50),
                      exclude=GRanges(),seqinfo=NULL,
                      esx=1,esy=1,add=FALSE,...){
     if(!is.null(seqinfo)) {
-        seqlevels(x,pruning.mode="coarse") <- seqinfo
-        seqlevels(y,pruning.mode="coarse") <- seqinfo
+        #seqlevels(x,pruning.mode="coarse") <- seqinfo
+        #seqlevels(y,pruning.mode="coarse") <- seqinfo
+        seqlevels(x,force=TRUE) <- seqinfo
+        seqlevels(y,force=TRUE) <- seqinfo
         ranks <- ranks[ranks <= min(length(x),length(y))]
     }
     if(length(exclude)>=1){

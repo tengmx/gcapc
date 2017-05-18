@@ -4,10 +4,10 @@
 \alias{bindWidth}
 \title{ChIP-seq Binding Width And Peak Window Size Estimation}
 \usage{
-bindWidth(cov, range = c(50L, 500L), step = 50L, odd = TRUE)
+bindWidth(coverage, range = c(50L, 500L), step = 50L, odd = TRUE)
 }
 \arguments{
-\item{cov}{A list object returned by function \code{read5endCoverage}.}
+\item{coverage}{A list object returned by function \code{read5endCoverage}.}
 
 \item{range}{A non-nagative integer vector with length 2. This vector
 set the range within which binding width and peak window size are 
