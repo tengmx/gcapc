@@ -88,8 +88,10 @@ customized by users.
   1. Sampling size for GC effects estimation. The default is 0.05, which
   means 5% of genome will be used if analysis is based on whole genome.
   However, for smaller genomes or small subset of chromosomes, this size
-  should be tuned higher to ensure accuracy. In the other hand, larger
-  size results longer computation of GC effects estimation.
+  should be tuned higher to ensure accuracy. Or, sample genome multiple
+  times, and use average estimation to aviod sampling bias. Note: larger
+  sample size or more sampling times result longer computation of 
+  GC effects estimation.
 
   1. EM algorithm priors and convergence. Options for EM algorithms can
   be tuned to accelerate the iterations.
@@ -152,27 +154,38 @@ default to display the trace of log likelihood changes, and other
 notification messages are printed for courtesy.
 
 ```{r gcbias}
-gcb <- gcEffects(cov, bdw, samp=0.25, plot=TRUE)
+gcb <- gcEffects(cov, bdw, sampling=c(0.25,1), plot=TRUE, model='poisson')
 ```
 
-Here, the left figure provides the correlation between forward and reverse
+Here, 25% of windows were sampled with 1 repeat.
+The left figure provides the correlation between forward and reverse
 strands signals, by using the estimated binding width as region unit.
 The right figure shows the raw and predicted GC effects using mixture model.
 The effect for the background regions will be utilized in downstream
 analysis.
 
+Two other options need to be noted here are *supervise* and "model".
+If *supervise* option is specified as a GRanges object, it provides a set of
+potential peaks and allows more efficient sampling procedure. In detail, the
+two mixtures sample separately from peak and background regions. *model*
+option allows switching to poission instead of default negative binomial in 
+model fitting. Theoratically, negative binomial assumption is more accurate
+than poisson. Nevertheless, poisson is a very good approximation to negative
+binomial in our model, and shows much faster computing speed than negative
+binomial especially when sample size is large.
+
 ## Peak significance
 
-This is the last step of *gcapc*. It uses information generated in previous
-steps, calculates enrichment scores and performs permutation analysis to
-propose significant peak regions. Final peaks are formated into *GRanges*
+This is the last step for peak calling. It uses information generated in 
+previous steps, calculates enrichment scores and performs permutation analysis
+to propose significant peak regions. Final peaks are formated into *GRanges*
 object, and meta columns are used to record significance. Additional
 notification messages are also printed.
 
 ```{r gcapc}
 layout(matrix(1:2,1,2))
-peaks <- gcapcPeaks(cov, gcb, bdw, plot=TRUE, permute=50L)
 peaks <- gcapcPeaks(cov, gcb, bdw, plot=TRUE, permute=100L)
+peaks <- gcapcPeaks(cov, gcb, bdw, plot=TRUE, permute=50L)
 peaks
 ```
 
@@ -184,13 +197,37 @@ right figure shows it based on 100 times of permutations. Note that we only
 used chromosome 21 for illustration, and thus increased permutation times
 from default 10 to 50 here.
 
+## Refine peaks
+In order to adjust GC effects for other peak callers outputs, this package
+provides function to refine enrichment significance for given peaks.
+Peaks have to be provided as a GRanges object. A flexible set of peaks are 
+preferred to reduce potential false negative, meaning both significant 
+(e.g. p<=0.05) and non-significant (e.g. p>0.05) peaks are preferred to be
+included. A reasonable peak set are all those with p less than e.g. 0.5.
+
+```{r refine}
+newpeaks <- refinePeaks(cov, gcb, bdw, peaks=peaks, permute=50L)
+newpeaks
+plot(newpeaks$es,newpeaks$newes,xlab='old score',ylab='new score')
+```
+
+Here, two new meta columns are added into previous peaks GRanges, including
+adjusted significance and pvalues. It is noted that the two enrichment
+significances are pretty similar in above figure since both are obtained by
+considering GC effects. In practice, if the old one were obtained from other
+peak callers, there should be big changes between the old and new. 
+
+# Refine Count Table
+
+In this package, function *refineSites* is provided in case that some are more
+interested in correcting existing sites instead of calling peaks. We used this
+function to adjust ENCODE reported sites in our paper [@teng]. For detail of
+using this function, please read the function manual page.
+
 # Summary
 
 In this vignette, we went through main functions in this package, and
 illustrated how they work. By easily following these steps, users could
-call peaks based on ChIP-seq data. Note that this package is not limited to
-protein binding ChIP-seq experiments. It can be used in Histone studies as
-well, since the protein binding width in this algorithm is actually a feature
-of crosslinked complex instead of real biological protein binding.
+call peaks based on ChIP-seq data. 
 
 # References
