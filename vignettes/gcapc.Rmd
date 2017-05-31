@@ -182,20 +182,21 @@ to propose significant peak regions. Final peaks are formated into *GRanges*
 object, and meta columns are used to record significance. Additional
 notification messages are also printed.
 
-```{r gcapc}
+```{r gcapc, results='hide'}
 layout(matrix(1:2,1,2))
 peaks <- gcapcPeaks(cov, gcb, bdw, plot=TRUE, permute=100L)
 peaks <- gcapcPeaks(cov, gcb, bdw, plot=TRUE, permute=50L)
+```
+```{r gcapcpeaks}
 peaks
 ```
-
 It is noted that here two tests using different number of permutation times
 results almost the same cutoff on enrichment scores, which suggests small
 number of permutations are allowed to save time. The left figure shows here
 the cutoff on enrichment scores based on 50 times of permutations, and 
 right figure shows it based on 100 times of permutations. Note that we only
 used chromosome 21 for illustration, and thus increased permutation times
-from default 10 to 50 here.
+from default 5 to 50 here.
 
 ## Refine peaks
 In order to adjust GC effects for other peak callers outputs, this package
@@ -205,12 +206,13 @@ preferred to reduce potential false negative, meaning both significant
 (e.g. p<=0.05) and non-significant (e.g. p>0.05) peaks are preferred to be
 included. A reasonable peak set are all those with p less than e.g. 0.5.
 
-```{r refine}
+```{r refine, results='hide', fig.width=4.5}
 newpeaks <- refinePeaks(cov, gcb, bdw, peaks=peaks, permute=50L)
-newpeaks
 plot(newpeaks$es,newpeaks$newes,xlab='old score',ylab='new score')
 ```
-
+```{r refinepeaks}
+newpeaks
+```
 Here, two new meta columns are added into previous peaks GRanges, including
 adjusted significance and pvalues. It is noted that the two enrichment
 significances are pretty similar in above figure since both are obtained by
