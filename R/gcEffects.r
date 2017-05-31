@@ -196,6 +196,7 @@ gcEffects <- function(coverage,bdwidth,flank=NULL,plot=TRUE,
         cat("...... Selecting supervised sampling\n")
         num1 <- floor(length(fo) * sampling[1])
         num2 <- floor((length(region)-length(fo)) * sampling[1])
+        num1 <- num1*ceiling(0.08/(num1/num2))
         sampidx <- sort(as.integer(sapply(seq_len(sampling[2]),
                    function(x) c(sample(fo,num1),
                    sample(setdiff(seq_along(region),fo),num2)))))
@@ -212,7 +213,6 @@ gcEffects <- function(coverage,bdwidth,flank=NULL,plot=TRUE,
                                    ranges(shift(regionsp,halfbdw)))))
     rm(regionsp,sampidx,fo)
     if(plot){
-        layout(matrix(1:2,1,2))
         idxx <- sample.int(length(region),min(50000,length(region)))
         plot(rcfwd[idxx],rcrev[idxx],
              main=paste('RC: shifted',halfbdw,"; CORR:",
