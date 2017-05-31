@@ -129,7 +129,7 @@ gcapcPeaks <- function(coverage,gcbias,bdwidth,flank=NULL,prefilter=4L,
     nr <- shift(resize(regionsgc,width(regionsgc)+flank*2),-flank)
     seqs <- getSeq(genome,nr)
     gcpos <- startIndex(vmatchPattern("S", seqs, fixed="subject"))
-    gcposb <- vector("integer",sum(width(nr)))
+    gcposb <- vector("integer",sum(as.numeric(width(nr))))
     gcposbi <- rep(seq_along(nr),times=width(nr))
     gcposbsp <- split(gcposb,gcposbi)
     for(i in seq_along(nr)){
@@ -137,7 +137,7 @@ gcapcPeaks <- function(coverage,gcbias,bdwidth,flank=NULL,prefilter=4L,
     }
     gcposbsprle <- as(gcposbsp,"RleList")
     gcnuml <- width(regionsgc)-halfbdw*2
-    gcnum <- vector('numeric',sum(gcnuml))
+    gcnum <- vector('numeric',sum(as.numeric(gcnuml)))
     gcnumi <- rep(seq_along(nr),times=gcnuml)
     gc <- split(gcnum,gcnumi)
     for(i in seq_along(nr)){
@@ -209,7 +209,8 @@ gcapcPeaks <- function(coverage,gcbias,bdwidth,flank=NULL,prefilter=4L,
         cat('......... permutation',p,'\n')
     }
     perm <- perm[order(as.numeric(names(perm)))]
-    pvs <- 1- cumsum(perm)/sum(perm)
+    pvs <- 1- cumsum(as.numeric(perm))/sum(as.numeric(perm))
+    names(pvs) <- names(perm)
     perm <- Rle(as.numeric(names(perm)),perm)
     rm(covfwdp,covrevp,start,end,regionrcspp,rcp1,rcp2,rcp3,rcp4,
         rcfwdp,rcrevp,gcw1,gcw2,gcw3,esl,regionrcsp)
