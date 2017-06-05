@@ -196,7 +196,7 @@ gcEffects <- function(coverage,bdwidth,flank=NULL,plot=TRUE,
         cat("...... Selecting supervised sampling\n")
         num1 <- floor(length(fo) * sampling[1])
         num2 <- floor((length(region)-length(fo)) * sampling[1])
-        num1 <- num1*ceiling(0.08/(num1/num2))
+        num1 <- min(num1*ceiling(0.1/(num1/num2)),length(fo))
         sampidx <- sort(as.integer(sapply(seq_len(sampling[2]),
                    function(x) c(sample(fo,num1),
                    sample(setdiff(seq_along(region),fo),num2)))))
