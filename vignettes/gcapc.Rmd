@@ -154,6 +154,7 @@ default to display the trace of log likelihood changes, and other
 notification messages are printed for courtesy.
 
 ```{r gcbias}
+layout(matrix(1:2,1,2))
 gcb <- gcEffects(cov, bdw, sampling=c(0.25,1), plot=TRUE, model='poisson')
 ```
 
