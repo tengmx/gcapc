@@ -1,6 +1,6 @@
 Package: gcapc
 Title: GC Aware Peak Caller
-Version: 1.1.6
+Version: 1.1.7
 Author: Mingxiang Teng and Rafael A. Irizarry
 Maintainer: Mingxiang Teng <tengmx@gmail.com>
 Description: Peak calling for ChIP-seq data with

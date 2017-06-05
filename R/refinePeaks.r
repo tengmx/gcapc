@@ -93,7 +93,17 @@ refinePeaks <- function(coverage,gcbias,bdwidth,peaks,flank=NULL,
       weight <- (1-abs(seq(-w,w)/w)^3)^3
       weight <- weight/sum(weight)
     }
+    peaks <- sort(shift(resize(peaks,width(peaks)+bdw),-halfbdw))
     cat("Starting to refine peaks.\n")
+    startp <- start(peaks) - 3*halfbdw - 2*flank
+    endp <- end(peaks) + 3*halfbdw + 2*flank
+    idx <- endp <= seqlengths(genome)[as.character(seqnames(peaks))] &
+        startp >= 1
+    if(sum(!idx)>0) {
+        cat(paste("remove",sum(!idx),
+                              "peaks located at chromosome ends\n"))
+        peaks <- peaks[idx]
+    }
     ### extending regions
     cat("...... extending peaks\n")
     regionsrc <- shift(resize(peaks,width(peaks)+halfbdw*4+flank*2+1),
@@ -105,7 +115,7 @@ refinePeaks <- function(coverage,gcbias,bdwidth,peaks,flank=NULL,
     nr <- shift(resize(regionsgc,width(regionsgc)+flank*2),-flank)
     seqs <- getSeq(genome,nr)
     gcpos <- startIndex(vmatchPattern("S", seqs, fixed="subject"))
-    gcposb <- vector("integer",sum(width(nr)))
+    gcposb <- vector("integer",sum(as.numeric(width(nr))))
     gcposbi <- rep(seq_along(nr),times=width(nr))
     gcposbsp <- split(gcposb,gcposbi)
     for(i in seq_along(nr)){
@@ -113,7 +123,7 @@ refinePeaks <- function(coverage,gcbias,bdwidth,peaks,flank=NULL,
     }
     gcposbsprle <- as(gcposbsp,"RleList")
     gcnuml <- width(regionsgc)-halfbdw*2
-    gcnum <- vector('numeric',sum(gcnuml))
+    gcnum <- vector('numeric',sum(as.numeric(gcnuml)))
     gcnumi <- rep(seq_along(nr),times=gcnuml)
     gc <- split(gcnum,gcnumi)
     for(i in seq_along(nr)){
@@ -185,7 +195,8 @@ refinePeaks <- function(coverage,gcbias,bdwidth,peaks,flank=NULL,
         cat('......... permutation',p,'\n')
     }
     perm <- perm[order(as.numeric(names(perm)))]
-    pvs <- 1- cumsum(perm)/sum(perm)
+    pvs <- 1- cumsum(as.numeric(perm))/sum(as.numeric(perm))
+    names(pvs) <- names(perm)
     perm <- Rle(as.numeric(names(perm)),perm)
     minpv <- 1/length(perm)
     rm(covfwdp,covrevp,start,end,regionrcspp,rcp1,rcp2,rcp3,rcp4,
@@ -200,5 +211,6 @@ refinePeaks <- function(coverage,gcbias,bdwidth,peaks,flank=NULL,
     newpv[newes<min(pvsn)] <- 1
     newpv[newpv==0] <- minpv
     mcols(peaks) <- data.frame(mcols(peaks),newes=newes,newpv=newpv)
+    peaks <- shift(resize(peaks,width(peaks)-bdw),halfbdw)
     peaks
 }
