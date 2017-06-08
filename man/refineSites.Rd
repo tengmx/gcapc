@@ -43,12 +43,18 @@ matrix should be outputed. This would be extremely useful if you have
 manually collected background sites and want to only export the sites
 you care about.}
 
-\item{gcrange}{A non-nagative numeric vector with length 2. This vector
-set the range of GC content to filter regions. For human, most regions
-have GC content between 0.3 and 0.8, which is set as the default. Other
-regions with GC content beyond this range will be ignored.}
+\item{gcrange}{A non-negative numeric vector with length 2. This vector
+sets the range of GC content to filter regions for GC effect estimation.
+For human, most regions have GC content between 0.3 and 0.8, which is
+set as the default. Other regions with GC content beyond this range
+will be ignored. This range is critical when very few foreground regions
+are selected for mixture model fitting, since outliers could drive the
+regression lines. Thus, if possible, first make a scatter plot between
+counts and GC content to decide  this parameter. Alternatively,
+select a narrower range, e.g. c(0.35,0.7), to aviod outlier effects from
+both high and low GC-content regions.}
 
-\item{emtrace}{A logical vector which, when TRUE (default), allows to 
+\item{emtrace}{A logical vector which, when TRUE (default), allows to
 print the trace of log likelihood changes in EM iterations.}
 
 \item{plot}{A logical vector which, when TRUE (default), returns miture
@@ -81,7 +87,7 @@ EM algorithm.}
 
 \item{converge}{A non-negative numeric specifying the condition of EM
 algorithm termination. EM algorithm stops when the ratio of log likelihood
-increment to whole log likelihood is less or equivalent to 
+increment to whole log likelihood is less or equivalent to
 \code{converge}.}
 
 \item{genome}{A \link[BSgenome]{BSgenome} object containing the sequences
