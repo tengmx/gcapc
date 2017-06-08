@@ -1,4 +1,4 @@
-#' @title Adjust ChIP-seq Read Count Table 
+#' @title Adjust ChIP-seq Read Count Table
 #'
 #' @description
 #' For a given set of sites with the same/comparable width, their
@@ -41,13 +41,19 @@
 #' matrix should be outputed. This would be extremely useful if you have
 #' manually collected background sites and want to only export the sites
 #' you care about.
-#' 
-#' @param gcrange A non-nagative numeric vector with length 2. This vector
-#' set the range of GC content to filter regions. For human, most regions
-#' have GC content between 0.3 and 0.8, which is set as the default. Other
-#' regions with GC content beyond this range will be ignored.
 #'
-#' @param emtrace A logical vector which, when TRUE (default), allows to 
+#' @param gcrange A non-negative numeric vector with length 2. This vector
+#' sets the range of GC content to filter regions for GC effect estimation.
+#' For human, most regions have GC content between 0.3 and 0.8, which is
+#' set as the default. Other regions with GC content beyond this range
+#' will be ignored. This range is critical when very few foreground regions
+#' are selected for mixture model fitting, since outliers could drive the
+#' regression lines. Thus, if possible, first make a scatter plot between
+#' counts and GC content to decide  this parameter. Alternatively,
+#' select a narrower range, e.g. c(0.35,0.7), to aviod outlier effects from
+#' both high and low GC-content regions.
+#'
+#' @param emtrace A logical vector which, when TRUE (default), allows to
 #' print the trace of log likelihood changes in EM iterations.
 #'
 #' @param plot A logical vector which, when TRUE (default), returns miture
@@ -57,10 +63,10 @@
 #' generalized linear model fitting. The default is negative
 #' binomial(\code{nbinom}), while \code{poisson} is also supported currently.
 #' More details see \code{gcEffects}.
-#' 
+#'
 #' @param mu0 A non-negative numeric initiating read count signals for
 #' background sites. This is treated as the starting value of background mean
-#' for poisson/nbinom fitting. 
+#' for poisson/nbinom fitting.
 #'
 #' @param mu1 A non-negative numeric initiating read count signals for
 #' foreground sites. This is treated as the starting value of foreground mean
@@ -73,14 +79,14 @@
 #' @param theta1 A non-negative numeric initiating the shape parameter of
 #' negative binomial model for foreground sites. For more detail, see
 #' theta in \code{\link[MASS]{glm.nb}} function.
-#' 
+#'
 #' @param p A non-negative numeric specifying the proportion of foreground
 #' sites in all estimated sites. This is treated as a starting value for
-#' EM algorithm. 
+#' EM algorithm.
 #'
 #' @param converge A non-negative numeric specifying the condition of EM
 #' algorithm termination. EM algorithm stops when the ratio of log likelihood
-#' increment to whole log likelihood is less or equivalent to 
+#' increment to whole log likelihood is less or equivalent to
 #' \code{converge}.
 #'
 #' @param genome A \link[BSgenome]{BSgenome} object containing the sequences
@@ -90,7 +96,7 @@
 #' software package. In that case the corresponding BSgenome data package
 #' needs to be already installed (see \code{?\link[BSgenome]{getBSgenome}} in
 #' the \pkg{BSgenome} package for the details).
-#' 
+#'
 #' @param gctype A character vector specifying choice of method to calculate
 #' effective GC content. Default \code{ladder} is based on uniformed fragment
 #' distribution. A more smoother method based on tricube assumption is also
