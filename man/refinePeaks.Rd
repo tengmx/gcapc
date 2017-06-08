@@ -19,9 +19,11 @@ bdwidth results no meaning of downstream analysis. The values
 need to be the same as it is when calculating \code{gcbias}.}
 
 \item{peaks}{A GRanges object specifying the peaks to be refined.
-A flexible set of peaks are preferred, meaning both significant
-(e.g. p<=0.05) and non-significant (e.g. p>0.05) peaks should be
-included. A reasonable peak set are those with p less than 0.5.}
+A flexible set of peaks are preferred to reduce potential false
+negative, meaning both significant (e.g. p<=0.05) and non-significant
+(e.g. p>0.05) peaks are preferred to be included. If the total
+number of peaks is not too big, a reasonable set of peaks include
+all those with p-value/FDR less than 0.99 by other peak callers.}
 
 \item{flank}{A non-negative integer specifying the flanking width of
 ChIP-seq binding. This parameter provides the flexibility that reads
