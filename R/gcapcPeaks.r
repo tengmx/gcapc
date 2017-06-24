@@ -245,7 +245,19 @@ gcapcPeaks <- function(coverage,gcbias,bdwidth,flank=NULL,prefilter=4L,
     regionids <- as.integer(names(peaksir))
     peaksirlst <- IRangesList(start=IntegerList(as.list(start(peaksir))),
                       end=IntegerList(as.list(end(peaksir))))
-    peaksc <- max(esrlt[regionids][peaksirlst])
+    if(length(regionids)>50000){
+        stepa <- seq(1,length(regionids),50000)
+        stepb <- seq(50000,length(regionids),50000)
+        if(length(stepb)+1 == length(stepa))
+            stepb <- c(stepb,length(regionids))
+        peaksc <- c()
+        for(i in seq_along(stepa)){
+            idx <- stepa[i]:stepb[i]
+            peaksc <- c(peaksc,max(esrlt[regionids[idx]][peaksirlst[idx]]))
+        }
+    }else{
+        peaksc <- max(esrlt[regionids][peaksirlst])
+    }
     peaksir <- shift(peaksir,start(regionsrc)[regionids]+halfbdw+flank)
     peaks <- GRanges(seqnames(regionsrc)[regionids],peaksir,es=peaksc)
     peaksrd <- reduce(peaks,min.gapwidth=halfbdw,with.revmap=TRUE)
