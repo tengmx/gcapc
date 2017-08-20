@@ -110,7 +110,7 @@ refinePeaks <- function(coverage,gcbias,bdwidth,peaks,flank=NULL,
     cat("...... extending peaks\n")
     regionsrc <- shift(resize(peaks,width(peaks)+halfbdw*4+flank*2+1),
                               -halfbdw*2-flank)
-    seqlevels(regionsrc,force=TRUE) <- names(coverage$fwd)
+    seqlevels(regionsrc,pruning.mode="coarse") <- names(coverage$fwd)
     regionsgc <- shift(resize(regionsrc,width(regionsrc)+halfbdw*2),-halfbdw)
     ### gc content
     cat("...... caculating GC content\n")

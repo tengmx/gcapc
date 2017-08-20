@@ -59,10 +59,8 @@ peaksCAT <- function(x,y,ranks=seq(200,min(length(x),length(y),20000),50),
                      exclude=GRanges(),seqinfo=NULL,
                      esx=1,esy=1,add=FALSE,...){
     if(!is.null(seqinfo)) {
-        #seqlevels(x,pruning.mode="coarse") <- seqinfo
-        #seqlevels(y,pruning.mode="coarse") <- seqinfo
-        seqlevels(x,force=TRUE) <- seqinfo
-        seqlevels(y,force=TRUE) <- seqinfo
+        seqlevels(x,pruning.mode="coarse") <- seqinfo
+        seqlevels(y,pruning.mode="coarse") <- seqinfo
         ranks <- ranks[ranks <= min(length(x),length(y))]
     }
     if(length(exclude)>=1){
