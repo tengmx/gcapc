@@ -15,9 +15,7 @@ code documented in [GitHub](https://github.com/tengmx/gcapc) or simply
 through [Bioconductor](https://bioconductor.org/packages/gcapc).
 
 If GitHub source installation is selected, make sure dependency
-R packages are pre-installed, including BiocGenerics, GenomeInfoDb,
-S4Vectors, IRanges, Biostrings, BSgenome, GenomicRanges, Rsamtools,
-GenomicAlignments as shown in the
+R packages are pre-installed as shown in the
 [DESCRIPTION](https://github.com/tengmx/gcapc/blob/master/DESCRIPTION) file.
 Then, install *gcapc* with following code.
 ```s
@@ -46,9 +44,3 @@ to estimate GC-bias or peak calling.
 
 You are very welcome to leave any questions/bug messages at
 [GitHub issues](https://github.com/tengmx/gcapc/issues).
-
-#### Note:
-
-1. If your local R is lower than the required as shown in
-[DESCRIPTION](https://github.com/tengmx/gcapc/blob/master/DESCRIPTION)
-file, please update R before installation.
