@@ -4,7 +4,7 @@ citEntry(entry = "article",
                "errors and batch effects in ChIP-Seq data."),
          author = personList(as.person("Mingxiang Teng"),
                              as.person("Rafael A. Irizarry")),
-         journal = "bioRxiv",
+         journal = "Genome Research",
          year = 2017,
          textVersion  =
          paste("Teng M, Irizarry RA (2017).",
