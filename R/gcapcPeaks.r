@@ -91,41 +91,10 @@
 #' gcapcPeaks(cov, gcb, bdw)
 #'
 
-## library(gcapc)
-## bamFiles <- list.files("/data/aryee/bernstein/chip/SummarizedData/bamwd",
-##            pattern="-sorted.bam$", full.names=TRUE )
-## bamFiles <- bamFiles[grepl("CTCF", bamFiles)]
-## bamFiles <- bamFiles[grepl("MGH|BRD", bamFiles)]
-## names(bamFiles) <- gsub("-wd-sorted.bam", "", gsub("_REP2", "-rep2", basename(bamFiles)), perl=TRUE)
-## nms <- names(bamFiles)[1]
-## processed <- gsub("_peaks.rds", "", list.files("/data/aryee/bernstein/chip/SummarizedData/gcapc/peaks"))
-## bamFiles <- bamFiles[!names(bamFiles) %in% processed]
-## cov1 <- read5endCoverage( bamFiles[1] )
-## bdw <- bindWidth(cov1)
-## gcb <- gcEffects( cov1, bdw, sampling=c(0.25, 1) )
-
-## bam <- system.file("extdata", "chipseq.bam", package="gcapc")
-## cov1 <- read5endCoverage(bam)
-## bdw <- bindWidth(cov1, range=c(50L,300L), step=10L)
-## gcb <- gcEffects(cov1, bdw, sampling=c(0.25,1), plot=FALSE, model='poisson')
-## system.time( peaks <- gcapcPeaks(cov1, gcb, bdw, plot=TRUE, permute=50L) )
-
-## system.time( peaks2 <- gcapcPeaks2(cov1, gcb, bdw, plot=TRUE, permute=5, permsamp=.1) )
-
-## coverage <- cov1
-## gcbias <- gcb
-## bdwidth <- bdw
-## flank <- NULL
-## prefilter <- 4L
-## permute <- 50
-## pv=0.05
-## plot=TRUE
-## genome <- "hg19"
-## gctype <- "ladder"
 
 gcapcPeaks <- function( coverage,gcbias,bdwidth,flank=NULL,prefilter=4L,
                        permute=5L,pv=0.05,plot=FALSE,genome="hg19",
-                       gctype=c("ladder","tricube"), permsamp=NULL ){
+                        gctype=c("ladder","tricube"), permsamp=NULL ){
     genome <- getBSgenome(genome)
     gctype <- match.arg(gctype)
     bdw <- bdwidth[1]
@@ -166,7 +135,7 @@ gcapcPeaks <- function( coverage,gcbias,bdwidth,flank=NULL,prefilter=4L,
     regionsgc <- shift(resize(regionsrc,width(regionsrc)+halfbdw*2),-halfbdw)
     rm(regions)
     ### gc content
-    cat("...... caculating GC content\n")
+    cat("...... calculating GC content\n")
     nr <- shift(resize(regionsgc,width(regionsgc)+flank*2),-flank)
     seqs <- getSeq(genome,nr)
     gcpos <- startIndex(vmatchPattern("S", seqs, fixed="subject"))
@@ -190,7 +159,7 @@ gcapcPeaks <- function( coverage,gcbias,bdwidth,flank=NULL,prefilter=4L,
     rm(regionsgc,nr,seqs,gcpos,gcposb,gcposbi,
         gcposbsp,gcposbsprle,gcnuml,gcnum,gcnumi)
     ### gc weight
-    cat("...... caculating GC effect weights\n")
+    cat("...... calculating GC effect weights\n")
     gcwbase0 <- round(Rle(gcbias$mu0med1/gcbias$mu0),3)
     gcw <- RleList(lapply(gc,function(x) gcwbase0[x*1000+1])) # slow
     rm(gc,gcwbase0)
@@ -259,7 +228,8 @@ gcapcPeaks <- function( coverage,gcbias,bdwidth,flank=NULL,prefilter=4L,
     cat('...... reporting peaks\n')
     if( !is.null( permsamp ) ){
         perm <- as.numeric( perm )
-        sccut <- quantile( sample( perm, length( perm ) * permsamp ), 1-pv )
+        sampledPerm <- sample( perm, length( perm ) * permsamp )
+        sccut <- quantile( sampledPerm, 1-pv )
     }else{
         sccut <- quantile( perm, 1-pv )
     }
@@ -268,8 +238,10 @@ gcapcPeaks <- function( coverage,gcbias,bdwidth,flank=NULL,prefilter=4L,
     if(plot){
         cat('......... ploting enrichment scores\n')
         es <- as.numeric(unlist(esrlt,use.names=FALSE))
-        if( !is( class, "numeric" ) ){
-            perm <- as.numeric( perm )
+        if( !is.null( permsamp ) ){
+            perm <- sampledPerm
+        }else{
+            perm <- as.numeric(perm)
         }
         plot(density(perm,bw=1),col='blue',xlab='enrichment score',
             xlim=range(es),main=paste('es determined by pvalue',pv))
@@ -316,22 +288,34 @@ gcapcPeaks <- function( coverage,gcbias,bdwidth,flank=NULL,prefilter=4L,
     minpvsn <- min(pvsn)
     esOrder <- order( peaksrd$es )
     peaksrd <- peaksrd[esOrder]
-#    pvs <- pvs[esOrder]
+ #   pvs <- pvs[esOrder]
     esVec <- peaksrd$es
     pvsni <- rep( NA, length( peaksrd ) )
     passNumbPrev <- 0
     xprev <- 0
-#    system.time(pvsniOld <- sapply(peaksrd$es,function(x) sum(pvsn<=x)))
+#    system.time(pvsniOld <- sapply(peaksrd$es[1:2000],function(x) sum(pvsn<=x)))
+    sprintf("processed %d of %d, vector %d\n", 0, length(esVec), length(pvsn))
+    system.time( 
     for( x in seq_len( length( esVec ) ) ){
-        if( xprev > 0 & esVec[x] == esVec[x-xprev] ){
-            pvsni[x] <- pvsni[x-xprev]
-            xprev <- x
-            next()
+#        if( x %% 500 == 0 ){
+#            cat( sprintf("processed %d of %d, vector length %d\n",
+#                        x, length(esVec), length(pvsn) ) )
+#        }
+#        cat(sprintf("%d, %d, %s, %s\n", x, xprev, esVec[x], esVec[x-xprev]))
+        if( xprev > 0 ){
+            if( esVec[x] == esVec[xprev] ){
+                pvsni[x] <- pvsni[xprev]
+                passNumbPrev <- pvsni[x]
+                xprev <- x
+                next()
+            }
         }
         pass <- pvsn <= esVec[x]
         passNumb <- sum(pass)
         pvsni[x] <- passNumb + passNumbPrev
-        pvsn <- pvsn[!pass]
+        if( passNumb > 0 ){
+            pvsn <- pvsn[!pass]            
+        }
         if( length( pvsn ) == 0 & x < length(esVec) ){
             pvsni[seq(x+1, length( esVec ))] <- pvsni[x]
             break()
@@ -339,6 +323,7 @@ gcapcPeaks <- function( coverage,gcbias,bdwidth,flank=NULL,prefilter=4L,
         passNumbPrev <- pvsni[x]
         xprev <- x
     }
+    )
     pvsni[pvsni==0] <- NA
     peaksrd$pv <- pvs[pvsni]
     peaksrd$pv[peaksrd$es<minpvsn] <- 1
