@@ -295,7 +295,7 @@ gcapcPeaks <- function( coverage,gcbias,bdwidth,flank=NULL,prefilter=4L,
     xprev <- 0
 #    system.time(pvsniOld <- sapply(peaksrd$es[1:2000],function(x) sum(pvsn<=x)))
     sprintf("processed %d of %d, vector %d\n", 0, length(esVec), length(pvsn))
-    system.time( 
+#    system.time( 
     for( x in seq_len( length( esVec ) ) ){
 #        if( x %% 500 == 0 ){
 #            cat( sprintf("processed %d of %d, vector length %d\n",
@@ -323,7 +323,7 @@ gcapcPeaks <- function( coverage,gcbias,bdwidth,flank=NULL,prefilter=4L,
         passNumbPrev <- pvsni[x]
         xprev <- x
     }
-    )
+#    )
     pvsni[pvsni==0] <- NA
     peaksrd$pv <- pvs[pvsni]
     peaksrd$pv[peaksrd$es<minpvsn] <- 1
