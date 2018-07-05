@@ -57,13 +57,12 @@
 #' is 3 times or more larger than estimated bind width. The value
 #' needs to be the same as it is when calculating \code{gcbias}.
 #'
-#' @param permsamp Fraction of the values to be used when calculating the percentile
-#' of the permutations (1-pv). For large datasets, the number of values resulting of
+#' @param permsamp Fraction of the values to be used when calculating the (1-pv)*100 percentile
+#' of the permutations. For large datasets, the vector resulting of
 #' the permutation step can be extremely large. Calculating percentiles from very large
-#' vectors can be computationally expensive. However, a very good approximation of
-#' the percentile can be obtained by estimating it from uniformly sampling the permuted
-#' values. This parameter indicates the fraction of permuted values to be used when uniformly
-#' sampling.
+#' vectors can be computationally expensive. However, a very good approximation of the percentiles
+#' can be obtained from a uniform sample of the permuted values. This parameter indicates
+#' the fraction of permuted values to be used to calculate the percentile.
 #'
 #' @return A GRanges of peaks with meta columns:
 #' \item{es}{Estimated enrichment score.}
