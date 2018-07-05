@@ -6,7 +6,7 @@
 \usage{
 gcapcPeaks(coverage, gcbias, bdwidth, flank = NULL, prefilter = 4L,
   permute = 5L, pv = 0.05, plot = FALSE, genome = "hg19",
-  gctype = c("ladder", "tricube"))
+  gctype = c("ladder", "tricube"), permsamp = NULL)
 }
 \arguments{
 \item{coverage}{A list object returned by function \code{read5endCoverage}.}
@@ -59,6 +59,13 @@ distribution. A more smoother method based on tricube assumption is also
 allowed. However, tricube should be not used if estimated peak half size
 is 3 times or more larger than estimated bind width. The value
 needs to be the same as it is when calculating \code{gcbias}.}
+
+\item{permsamp}{Fraction of the values to be used when calculating the (1-pv)*100 percentile
+of the permutations. For large datasets, the vector resulting of
+the permutation step can be extremely large. Calculating percentiles from very large
+vectors can be computationally expensive. However, a very good approximation of the percentiles
+can be obtained from a uniform sample of the permuted values. This parameter indicates
+the fraction of permuted values to be used to calculate the percentile.}
 }
 \value{
 A GRanges of peaks with meta columns:
@@ -77,4 +84,5 @@ cov <- read5endCoverage(bam)
 bdw <- bindWidth(cov)
 gcb <- gcEffects(cov, bdw, sampling = c(0.15,1))
 gcapcPeaks(cov, gcb, bdw)
+
 }

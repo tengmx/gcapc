@@ -57,6 +57,13 @@
 #' is 3 times or more larger than estimated bind width. The value
 #' needs to be the same as it is when calculating \code{gcbias}.
 #'
+#' @param permsamp Fraction of the values to be used when calculating the (1-pv)*100 percentile
+#' of the permutations. For large datasets, the vector resulting of
+#' the permutation step can be extremely large. Calculating percentiles from very large
+#' vectors can be computationally expensive. However, a very good approximation of the percentiles
+#' can be obtained from a uniform sample of the permuted values. This parameter indicates
+#' the fraction of permuted values to be used to calculate the percentile.
+#'
 #' @return A GRanges of peaks with meta columns:
 #' \item{es}{Estimated enrichment score.}
 #' \item{pv}{p-value.}
@@ -81,10 +88,12 @@
 #' bdw <- bindWidth(cov)
 #' gcb <- gcEffects(cov, bdw, sampling = c(0.15,1))
 #' gcapcPeaks(cov, gcb, bdw)
+#'
 
-gcapcPeaks <- function(coverage,gcbias,bdwidth,flank=NULL,prefilter=4L,
+
+gcapcPeaks <- function( coverage,gcbias,bdwidth,flank=NULL,prefilter=4L,
                        permute=5L,pv=0.05,plot=FALSE,genome="hg19",
-                       gctype=c("ladder","tricube")){
+                        gctype=c("ladder","tricube"), permsamp=NULL ){
     genome <- getBSgenome(genome)
     gctype <- match.arg(gctype)
     bdw <- bdwidth[1]
@@ -96,7 +105,7 @@ gcapcPeaks <- function(coverage,gcbias,bdwidth,flank=NULL,prefilter=4L,
         pdwh <- flank+bdw-halfbdw
     }
     if(gctype=="ladder"){
-      weight <- c(seq_len(flank),rep(flank+1,bdw),rev(seq_len(flank)))
+      weight <- c(seq_len(flank), rep(flank+1, bdw), rev(seq_len(flank)))
       weight <- weight/sum(weight)
     }else if(gctype=="tricube"){
       w <- flank+halfbdw
@@ -125,7 +134,7 @@ gcapcPeaks <- function(coverage,gcbias,bdwidth,flank=NULL,prefilter=4L,
     regionsgc <- shift(resize(regionsrc,width(regionsrc)+halfbdw*2),-halfbdw)
     rm(regions)
     ### gc content
-    cat("...... caculating GC content\n")
+    cat("...... calculating GC content\n")
     nr <- shift(resize(regionsgc,width(regionsgc)+flank*2),-flank)
     seqs <- getSeq(genome,nr)
     gcpos <- startIndex(vmatchPattern("S", seqs, fixed="subject"))
@@ -149,7 +158,7 @@ gcapcPeaks <- function(coverage,gcbias,bdwidth,flank=NULL,prefilter=4L,
     rm(regionsgc,nr,seqs,gcpos,gcposb,gcposbi,
         gcposbsp,gcposbsprle,gcnuml,gcnum,gcnumi)
     ### gc weight
-    cat("...... caculating GC effect weights\n")
+    cat("...... calculating GC effect weights\n")
     gcwbase0 <- round(Rle(gcbias$mu0med1/gcbias$mu0),3)
     gcw <- RleList(lapply(gc,function(x) gcwbase0[x*1000+1])) # slow
     rm(gc,gcwbase0)
@@ -209,20 +218,30 @@ gcapcPeaks <- function(coverage,gcbias,bdwidth,flank=NULL,prefilter=4L,
         cat('......... permutation',p,'\n')
     }
     perm <- perm[order(as.numeric(names(perm)))]
-    pvs <- 1- cumsum(as.numeric(perm))/sum(as.numeric(perm))
+    pvs <- 1 - cumsum(as.numeric(perm))/sum(as.numeric(perm))
     names(pvs) <- names(perm)
     perm <- Rle(as.numeric(names(perm)),perm)
     rm(covfwdp,covrevp,start,end,regionrcspp,rcp1,rcp2,rcp3,rcp4,
         rcfwdp,rcrevp,gcw1,gcw2,gcw3,esl,regionrcsp)
     ### report peaks
     cat('...... reporting peaks\n')
-    sccut <- quantile(perm,1-pv)
+    if( !is.null( permsamp ) ){
+        perm <- as.numeric( perm )
+        sampledPerm <- sample( perm, length( perm ) * permsamp )
+        sccut <- quantile( sampledPerm, 1-pv )
+    }else{
+        sccut <- quantile( perm, 1-pv )
+    }
     minpv <- 1/length(perm)
     cat('......... enrichment scores cut at',sccut,'\n')
     if(plot){
         cat('......... ploting enrichment scores\n')
         es <- as.numeric(unlist(esrlt,use.names=FALSE))
-        perm <- as.numeric(perm)
+        if( !is.null( permsamp ) ){
+            perm <- sampledPerm
+        }else{
+            perm <- as.numeric(perm)
+        }
         plot(density(perm,bw=1),col='blue',xlab='enrichment score',
             xlim=range(es),main=paste('es determined by pvalue',pv))
         lines(density(es,bw=1),col='red')
@@ -244,7 +263,7 @@ gcapcPeaks <- function(coverage,gcbias,bdwidth,flank=NULL,prefilter=4L,
     peaksir <- unlist(peaksir)
     regionids <- as.integer(names(peaksir))
     peaksirlst <- IRangesList(start=IntegerList(as.list(start(peaksir))),
-                      end=IntegerList(as.list(end(peaksir))))
+                              end=IntegerList(as.list(end(peaksir))))
     if(length(regionids)>50000){
         stepa <- seq(1,length(regionids),50000)
         stepb <- seq(50000,length(regionids),50000)
@@ -261,13 +280,52 @@ gcapcPeaks <- function(coverage,gcbias,bdwidth,flank=NULL,prefilter=4L,
     peaksir <- shift(peaksir,start(regionsrc)[regionids]+halfbdw+flank)
     peaks <- GRanges(seqnames(regionsrc)[regionids],peaksir,es=peaksc)
     peaksrd <- reduce(peaks,min.gapwidth=halfbdw,with.revmap=TRUE)
-    peaksrd$es <- sapply(peaksrd$revmap,function(i) max(peaks$es[i]))
+    esVec <- peaks$es
+    peaksrd$es <- sapply(peaksrd$revmap,function(i) max(esVec[i]))
     peaksrd$revmap <- NULL
     pvsn <- as.numeric(names(pvs))
-    pvsni <- sapply(peaksrd$es,function(x) sum(pvsn<=x))
+    minpvsn <- min(pvsn)
+    esOrder <- order( peaksrd$es )
+    peaksrd <- peaksrd[esOrder]
+ #   pvs <- pvs[esOrder]
+    esVec <- peaksrd$es
+    pvsni <- rep( NA, length( peaksrd ) )
+    passNumbPrev <- 0
+    xprev <- 0
+#    system.time(pvsniOld <- sapply(peaksrd$es[1:2000],function(x) sum(pvsn<=x)))
+    sprintf("processed %d of %d, vector %d\n", 0, length(esVec), length(pvsn))
+#    system.time( 
+    for( x in seq_len( length( esVec ) ) ){
+#        if( x %% 500 == 0 ){
+#            cat( sprintf("processed %d of %d, vector length %d\n",
+#                        x, length(esVec), length(pvsn) ) )
+#        }
+#        cat(sprintf("%d, %d, %s, %s\n", x, xprev, esVec[x], esVec[x-xprev]))
+        if( xprev > 0 ){
+            if( esVec[x] == esVec[xprev] ){
+                pvsni[x] <- pvsni[xprev]
+                passNumbPrev <- pvsni[x]
+                xprev <- x
+                next()
+            }
+        }
+        pass <- pvsn <= esVec[x]
+        passNumb <- sum(pass)
+        pvsni[x] <- passNumb + passNumbPrev
+        if( passNumb > 0 ){
+            pvsn <- pvsn[!pass]            
+        }
+        if( length( pvsn ) == 0 & x < length(esVec) ){
+            pvsni[seq(x+1, length( esVec ))] <- pvsni[x]
+            break()
+        }
+        passNumbPrev <- pvsni[x]
+        xprev <- x
+    }
+#    )
     pvsni[pvsni==0] <- NA
     peaksrd$pv <- pvs[pvsni]
-    peaksrd$pv[peaksrd$es<min(pvsn)] <- 1
+    peaksrd$pv[peaksrd$es<minpvsn] <- 1
     peaksrd$pv[peaksrd$pv==0] <- minpv
-    peaksrd
+    sort( peaksrd )
 }
